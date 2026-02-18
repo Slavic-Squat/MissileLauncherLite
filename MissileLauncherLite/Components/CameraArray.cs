@@ -46,10 +46,10 @@ namespace IngameScript
 
             private void Init()
             {
-                _cameras = AllGridBlocks.Where(b => b is IMyCameraBlock && b.CustomName.ToUpper().Contains(ID)).Cast<IMyCameraBlock>().ToList();
+                _cameras = AllGridBlocks.Where(b => b is IMyCameraBlock && b.CustomName.ToUpper().Contains($"CAMERA ARRAY {ID} CAMERA")).Cast<IMyCameraBlock>().ToList();
                 if (_cameras.Count == 0)
                 {
-                    throw new Exception($"{ID} Camera Array on has no cameras!");
+                    throw new Exception($"Camera Array {ID} has no cameras!");
                 }
 
                 foreach (var camera in _cameras)
@@ -86,7 +86,7 @@ namespace IngameScript
 
             public MyDetectedEntityInfo Raycast(Vector3D raycastTarget, float overshoot)
             {
-                Vector3D raycastOvershoot = (raycastTarget - GetCameraPosition()) * overshoot;
+                Vector3D raycastOvershoot = (raycastTarget - GetCameraPosition()).Normalized() * overshoot;
                 raycastTarget += raycastOvershoot;
 
                 return Raycast(raycastTarget);
@@ -109,7 +109,7 @@ namespace IngameScript
 
             public bool CanScan(Vector3D raycastTarget, float overshoot)
             {
-                Vector3D raycastOvershoot = (raycastTarget - GetCameraPosition()) * overshoot;
+                Vector3D raycastOvershoot = (raycastTarget - GetCameraPosition()).Normalized() * overshoot;
                 raycastTarget += raycastOvershoot;
 
                 return CanScan(raycastTarget);

@@ -62,10 +62,10 @@ namespace IngameScript
             {
                 ID = id.ToUpper();
 
-                GetBlocks();
+                Init();
             }
 
-            private void GetBlocks()
+            private void Init()
             {
                 _attachment = AllGridBlocks.Where(b => b is IMyMechanicalConnectionBlock && b.CustomName.ToUpper().Contains($"MISSILE BAY {ID} ATTACHMENT")).FirstOrDefault() as IMyMechanicalConnectionBlock;
                 if (_attachment == null)

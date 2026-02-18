@@ -26,6 +26,7 @@ namespace IngameScript
         {
             private Dictionary<string, TargetingLaser> _targetingLasers = new Dictionary<string, TargetingLaser>();
             private TargetingLaser _spottingLaser;
+            private List<IMyLargeTurretBase> _targetingBlocks = new List<IMyLargeTurretBase>();
             private double _time;
             private Dictionary<long, EntityInfoExt> _targets = new Dictionary<long, EntityInfoExt>();
             private long _lockedTargetID = -1;
@@ -33,6 +34,7 @@ namespace IngameScript
             private bool _searching = false;
 
             public IReadOnlyDictionary<long, EntityInfoExt> Targets => _targets;
+            public long LockedTargetID => _lockedTargetID;
             public IReadOnlyDictionary<string, TargetingLaser> TargetingLasers => _targetingLasers;
 
             public TargetCoordinator()
@@ -44,14 +46,20 @@ namespace IngameScript
             {
                 int numLasers = Config.Get("Targeting", "NumLasers").ToInt32(0);
                 Config.Set("Targeting", "NumLasers", numLasers);
+                MePb.CustomData = Config.ToString();
+
                 for (int i = 0; i < numLasers; i++)
                 {
                     string id = i.ToString().ToUpper();
                     TargetingLaser laser = new TargetingLaser(id, false, true);
+                    laser.OnTargetUpdated += AddTarget;
                     _targetingLasers[id] = laser;
                 }
 
                 _spottingLaser = new TargetingLaser("SPOTTER", true, false);
+                _spottingLaser.OnTargetUpdated += AddTarget;
+
+                _targetingBlocks = AllGridBlocks.Where(b => b is IMyLargeTurretBase).Cast<IMyLargeTurretBase>().ToList();
             }
 
             public void Run(double time)
@@ -66,11 +74,10 @@ namespace IngameScript
                 if (_searching)
                 {
                     _spottingLaser.FireLaser();
-                    if (_spottingLaser.HasTarget)
+                    if (_spottingLaser.TargetAquired)
                     {
                         _searching = false;
                         LockTarget(_spottingLaser.Target.EntityID);
-                        AddTarget(_spottingLaser.Target);
                     }
                 }
 
@@ -83,7 +90,6 @@ namespace IngameScript
                 }
 
                 _spottingLaser.Run(globalTime);
-                AddTarget(_spottingLaser.Target);
 
                 foreach (var laser in _targetingLasers.Values)
                 {
@@ -92,7 +98,16 @@ namespace IngameScript
                         laser.SetTarget(lockedTarget);
                     }
                     laser.Run(globalTime);
-                    AddTarget(laser.Target);
+                }
+
+                foreach (var targetingBlock in _targetingBlocks)
+                {
+                    if (targetingBlock.HasTarget)
+                    {
+                        MyDetectedEntityInfo detectedInfo = targetingBlock.GetTargetedEntity();
+                        EntityInfoExt info = new EntityInfoExt(detectedInfo, globalTime);
+                        AddTarget(info);
+                    }
                 }
 
                 _targetsToRemove.Clear();
@@ -114,7 +129,7 @@ namespace IngameScript
                 _time = time;
             }
 
-            public void AddTarget(EntityInfoExt target)
+            private void AddTarget(EntityInfoExt target)
             {
                 if (!target.IsValid)
                 {

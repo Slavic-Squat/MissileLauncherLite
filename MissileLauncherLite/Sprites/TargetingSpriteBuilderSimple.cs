@@ -32,17 +32,19 @@ namespace IngameScript
             public IReadOnlyList<MySpriteExt> FinalSprites => _finalSprites;
             public IReadOnlyDictionary<long, MyEntitySprite> EntitySprites => _entitySprites;
 
-            private float _range = 12000f;
+            private float _range = 6000f;
             private RectangleF _screenBounds;
+            private float _resScale = 1f;
 
             private List<MySpriteExt> _sprites = new List<MySpriteExt>();
             private List<MySpriteExt> _staticSprites = new List<MySpriteExt>();
             private List<MySpriteExt> _finalSprites = new List<MySpriteExt>();
             private Dictionary<long, MyEntitySprite> _entitySprites = new Dictionary<long, MyEntitySprite>();
 
-            public TargetingSpriteBuilderSimple(RectangleF screenBounds)
+            public TargetingSpriteBuilderSimple(float res)
             {
-                _screenBounds = screenBounds;
+                _resScale = res / 1024f;
+                _screenBounds = new RectangleF(0, 0, res, res);
                 BuildStaticSprites();
             }
 
@@ -53,7 +55,7 @@ namespace IngameScript
                     Type = SpriteType.TEXTURE,
                     Data = "Self_1",
                     Position = _screenBounds.Center,
-                    Size = new Vector2(128, 128),
+                    Size = new Vector2(128, 128) * _resScale,
                     Color = Color.White,
                     Alignment = TextAlignment.CENTER,
                     RotationOrScale = 0f
@@ -172,12 +174,12 @@ namespace IngameScript
                     if (entity.Type == EntityType.Missile)
                     {
                         spriteName = "Missile_0";
-                        spriteSize = new Vector2(16, 16);
+                        spriteSize = new Vector2(16, 16) * _resScale;
                     }
                     else
                     {
                         spriteName = "Target_0";
-                        spriteSize = new Vector2(32, 32);
+                        spriteSize = new Vector2(32, 32) * _resScale;
                     }
 
                     MySprite tempSprite = new MySprite()

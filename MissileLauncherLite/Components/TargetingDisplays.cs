@@ -24,35 +24,68 @@ namespace IngameScript
     {
         public class TargetingDisplays
         {
-            private TargetingSpriteBuilderSimple _spriteBuilder;
-            private List<IMyTextSurface> _displays = new List<IMyTextSurface>();
+            private UICoordinator _uiCoordinator;
+            private TargetingSpriteBuilderSimple _spriteBuilderSimple;
+            private TargetingSpriteBuilder _spriteBuilderAdvanced;
+            private List<IMyTextSurface> _simpleDisplays = new List<IMyTextSurface>();
+            private List<IMyTextSurface> _advancedDisplays = new List<IMyTextSurface>();
             private IReadOnlyDictionary<long, EntityInfoExt> _entities = new Dictionary<long, EntityInfoExt>();
-            public TargetingDisplays(IReadOnlyDictionary<long, EntityInfoExt> entities)
+            public TargetingDisplays(UICoordinator uiCoordinator)
             {
-                _spriteBuilder = new TargetingSpriteBuilderSimple(new RectangleF(0, 0, 1024f, 1024f));
-                _entities = entities;
+                _uiCoordinator = uiCoordinator;
+                _spriteBuilderSimple = new TargetingSpriteBuilderSimple(1024f);
+                _spriteBuilderAdvanced = new TargetingSpriteBuilder(1024f, 1.5f);
+                _entities = _uiCoordinator.AllEntities;
 
-                GetBlocks();
+                Init();
             }
 
-            private void GetBlocks()
+            private void Init()
             {
                 IEnumerable<IMyTerminalBlock> temp = AllGridBlocks.Where(b => b is IMyTextSurface && b.CustomName.ToUpper().Contains("TARGETING DISPLAY"));
 
                 foreach (var displayBlock in temp)
                 {
-                    AddDisplay(displayBlock as IMyTextSurface);
+                    MyIni config = new MyIni();
+                    if (!config.TryParse(displayBlock.CustomData))
+                    {
+                        config.Clear();
+                    }
+                    bool isAdvanced = config.Get("Config", "Advanced").ToBoolean(false);
+                    config.Set("Config", "Advanced", isAdvanced);
+                    displayBlock.CustomData = config.ToString();
+
+                    AddDisplay(displayBlock as IMyTextSurface, isAdvanced);
                 }
             }
 
             public void Draw()
             {
-                _spriteBuilder.BuildSprites(_entities);
+                long lockedTargetID = _uiCoordinator.TargetCoordinator.LockedTargetID;
 
-                foreach (var display in _displays)
+                if (_simpleDisplays.Count != 0)
+                {
+                    _spriteBuilderSimple.BuildSprites(_entities, lockedTargetID);
+                }
+                if (_advancedDisplays.Count != 0)
+                {
+                    _spriteBuilderAdvanced.BuildSprites(_entities, lockedTargetID);
+                }
+
+                foreach (var display in _simpleDisplays)
                 {
                     var frame = display.DrawFrame();
-                    foreach (var sprite in _spriteBuilder.FinalSprites)
+                    foreach (var sprite in _spriteBuilderSimple.FinalSprites)
+                    {
+                        sprite.Draw(frame);
+                    }
+                    frame.Dispose();
+                }
+
+                foreach (var display in _advancedDisplays)
+                {
+                    var frame = display.DrawFrame();
+                    foreach (var sprite in _spriteBuilderAdvanced.FinalSprites)
                     {
                         sprite.Draw(frame);
                     }
@@ -60,14 +93,22 @@ namespace IngameScript
                 }
             }
 
-            public void AddDisplay(IMyTextSurface display)
+            public void AddDisplay(IMyTextSurface display, bool isAdvanced)
             {
-                if (_displays.Contains(display)) return;
+                if (isAdvanced)
+                {
+                    if (_advancedDisplays.Contains(display)) return;
+                    _advancedDisplays.Add(display);
+                }
+                else
+                {
+                    if (_simpleDisplays.Contains(display)) return;
+                    _simpleDisplays.Add(display);
+                }
 
                 display.ContentType = ContentType.SCRIPT;
                 display.Script = "";
                 display.ScriptBackgroundColor = Color.Black;
-                _displays.Add(display);
             }
         }
     }

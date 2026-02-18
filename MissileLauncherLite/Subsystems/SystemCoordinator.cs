@@ -30,6 +30,27 @@ namespace IngameScript
             public static MatrixD ReferenceWorldMatrix => ReferenceController.WorldMatrix;
             public static Vector3D ReferencePosition => ReferenceController.GetPosition();
             public static Vector3D ReferenceVelocity => ReferenceController.GetShipVelocities().LinearVelocity;
+            public static Vector3D ReferenceGravity => ReferenceController.GetNaturalGravity();
+            public static float ReferenceMass => ReferenceController.CalculateShipMass().TotalMass;
+            public static double ReferenceSeaLevelAlt
+            {
+                get
+                {
+                    double alt = double.MaxValue;
+                    ReferenceController.TryGetPlanetElevation(MyPlanetElevation.Sealevel, out alt);
+                    return alt;
+                }
+            }
+
+            public static double ReferenceSurfaceAlt
+            {
+                get
+                {
+                    double alt = double.MaxValue;
+                    ReferenceController.TryGetPlanetElevation(MyPlanetElevation.Surface, out alt);
+                    return alt;
+                }
+            }
             public static long SelfID => ReferenceController.CubeGrid.EntityId;
 
             private double _time;
@@ -40,24 +61,24 @@ namespace IngameScript
 
             public SystemCoordinator()
             {
-                GetBlocks();
                 Init();
             }
 
-            private void GetBlocks()
+            private void Init()
             {
                 ReferenceController = AllGridBlocks.FirstOrDefault(b => b is IMyShipController && b.CustomName.ToUpper().Contains("MAIN CONTROLLER")) as IMyShipController;
                 if (ReferenceController == null)
                 {
                     throw new Exception($"main controller not found!");
                 }
-            }
 
-            private void Init()
-            {
                 TargetCoordinator = new TargetCoordinator();
                 MissileCoordinator = new MissileCoordinator(TargetCoordinator.Targets);
                 UICoordinator = new UICoordinator(this);
+
+                CommandHandler0.RegisterCommand("START_SEARCH", (args) => TargetCoordinator.StartSearch());
+                CommandHandler0.RegisterCommand("STOP_SEARCH", (args) => TargetCoordinator.StopSearch());
+                CommandHandler0.RegisterCommand("UNLOCK_TARGET", (args) => TargetCoordinator.UnlockTarget());
             }
 
             public void Run(double time)

@@ -26,6 +26,8 @@ namespace IngameScript
         {
             private SystemCoordinator _systemCoordinator;
             private Dictionary<long, EntityInfoExt> _allEntities = new Dictionary<long, EntityInfoExt>();
+            private TargetingDisplays _targetingDisplays;
+            private HUD _hud;
 
             public IReadOnlyDictionary<long, EntityInfoExt> Targets => _systemCoordinator.TargetCoordinator.Targets;
             public IReadOnlyDictionary<long, EntityInfoExt> MyMissiles => _systemCoordinator.MissileCoordinator.MyMissiles;
@@ -34,14 +36,14 @@ namespace IngameScript
             public TargetCoordinator TargetCoordinator => _systemCoordinator.TargetCoordinator;
             public IReadOnlyDictionary<string, MissileBay> MissileBays => _systemCoordinator.MissileCoordinator.MissileBays;
             public IReadOnlyDictionary<string, TargetingLaser> TargetingLasers => _systemCoordinator.TargetCoordinator.TargetingLasers;
-            public TargetingDisplays TargetingDisplays { get; private set; }
 
             private int _runCounter = 0;
 
             public UICoordinator(SystemCoordinator systemCoordinator)
             {
                 _systemCoordinator = systemCoordinator;
-                TargetingDisplays = new TargetingDisplays(AllEntities);
+                _targetingDisplays = new TargetingDisplays(this);
+                _hud = new HUD(this);
             }
 
             public void Run()
@@ -59,9 +61,10 @@ namespace IngameScript
                     _allEntities[missile.Key] = missile.Value;
                 }
 
-                if (_runCounter % 10 == 0)
+                if (_runCounter % 5 == 0)
                 {
-                    TargetingDisplays.Draw();
+                    _targetingDisplays.Draw();
+                    _hud.Draw();
                 }
             }
         }

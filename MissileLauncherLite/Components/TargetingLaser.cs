@@ -46,7 +46,7 @@ namespace IngameScript
             private PIDControl _elevationPID;
 
             public string ID { get; private set; }
-            public bool HasTarget => Target.IsValid;
+            public bool TargetSet => Target.IsValid;
             public float MaxRaycastDistance
             {
                 get
@@ -56,10 +56,12 @@ namespace IngameScript
                 set
                 {
                     _maxRaycastDistance = value;
-                    _cameraArray.MaxRaycastDistance = value;
+                    _cameraArray.MaxRaycastDistance = value * 1.1f;
                 }
             }
             public EntityInfoExt Target { get; private set; }
+            public bool TargetAquired { get; private set; }
+            public event Action<EntityInfoExt> OnTargetUpdated;
 
             public TargetingLaser(string id, bool isStatic, bool isAuxiliary)
             {
@@ -112,8 +114,12 @@ namespace IngameScript
                     _elevationPID = null;
                 }
 
-                _referenceCamera = AllGridBlocks.FirstOrDefault(b => b is IMyCameraBlock && b.CustomName.Contains($"LASER {ID} REFERENCE CAMERA")) as IMyCameraBlock;
-                _cameraArray = new CameraArray($"LASER {ID} CAMERA ARRAY", _maxRaycastDistance);
+                _referenceCamera = AllGridBlocks.FirstOrDefault(b => b is IMyCameraBlock && b.CustomName.ToUpper().Contains($"LASER {ID} REFERENCE CAMERA")) as IMyCameraBlock;
+                if (_referenceCamera == null)
+                {
+                    throw new Exception($"Reference Camera for Laser {ID} not found!");
+                }
+                _cameraArray = new CameraArray($"LASER {ID}", _maxRaycastDistance * 1.1f);
                 _cameraArray.AddCamera(_referenceCamera);
 
                 MePb.CustomData = Config.ToString();
@@ -131,11 +137,11 @@ namespace IngameScript
 
                 _referenceMatrix = _referenceCamera.WorldMatrix;
 
-                if (!HasTarget && !_isStatic)
+                if (!TargetSet && !_isStatic)
                 {
                     MoveLaser(0, 0);
                 }
-                else if (HasTarget)
+                else if (TargetSet)
                 {
                     AutoTrack(time);
                 }
@@ -151,7 +157,7 @@ namespace IngameScript
                 Vector3D estimatedTargetPosition = Target.Position + Target.Velocity * timeSinceLastDetection;
                 double estimatedTargetDistance = (estimatedTargetPosition - _referenceMatrix.Translation).Length();
 
-                if (estimatedTargetDistance > MaxRaycastDistance * 0.8 || timeSinceLastDetection > 5)
+                if (estimatedTargetDistance > _maxRaycastDistance || timeSinceLastDetection > 5)
                 {
                     ForgetTarget();
                     return;
@@ -164,12 +170,12 @@ namespace IngameScript
                 {
                     float azimuthInput = 0;
                     float elevationInput = 0;
-                    if (!_hasAzimuthCtrl)
+                    if (_hasAzimuthCtrl)
                     {
                         double azimuthError = Math.Atan2(-estimatedTargetDirLocal.X, -estimatedTargetDirLocal.Z);
                         azimuthInput = _azimuthPID.Run((float)azimuthError, (float)timeDeltaSeconds) / _sensitivity;
                     }
-                    if (!_hasElevationCtrl)
+                    if (_hasElevationCtrl)
                     {
                         double elevationError = Math.Asin(estimatedTargetDirLocal.Y);
                         elevationInput = _elevationPID.Run((float)elevationError, (float)timeDeltaSeconds) / _sensitivity;
@@ -178,7 +184,7 @@ namespace IngameScript
                     MoveLaser(azimuthInput, elevationInput);
                 }
 
-                FireLaser(estimatedTargetPosition, 0.1f);
+                FireLaser(estimatedTargetPosition, 10f);
             }
 
             private void MoveLaser(float azimuthInput = 0, float elevationInput = 0)
@@ -191,20 +197,21 @@ namespace IngameScript
             {
                 Target = default(EntityInfoExt);
                 _matchingDetectionCounter = 0;
+                TargetAquired = false;
             }
 
             private void FireLaser(Vector3D raycastTarget, float overshoot)
             {
                 double globalTime = SystemCoordinator.GlobalTime;
-
-                if (!_cameraArray.CanScan(raycastTarget, 0.1f))
-                    return;
-
-                var raycastResult = _cameraArray.Raycast(raycastTarget, 0.1f);
-
-                if (!raycastResult.IsEmpty())
+                if (!_cameraArray.CanScan(raycastTarget, overshoot))
                 {
-                    if (!HasTarget && !_isAuxiliary)
+                    return;
+                }
+                var raycastResult = _cameraArray.Raycast(raycastTarget, overshoot);
+
+                if (!raycastResult.IsEmpty() && (raycastResult.Type == MyDetectedEntityType.SmallGrid || raycastResult.Type == MyDetectedEntityType.LargeGrid))
+                {
+                    if (!TargetSet && !_isAuxiliary)
                     {
                         if (raycastResult.EntityId == _previouslyDetectedEntity.EntityId)
                         {
@@ -220,19 +227,23 @@ namespace IngameScript
                         if (_matchingDetectionCounter >= _countThreshold)
                         {
                             Target = new EntityInfoExt(raycastResult, globalTime);
+                            TargetAquired = true;
+                            OnTargetUpdated?.Invoke(Target);
                         }
                     }
                     else if (raycastResult.EntityId == Target.EntityID)
                     {
                         Target = new EntityInfoExt(raycastResult, globalTime);
+                        TargetAquired = true;
+                        OnTargetUpdated?.Invoke(Target);
                     }
                 }
             }
 
             public void FireLaser()
             {
-                if (HasTarget) return;
-                Vector3D raycastTarget = _referenceMatrix.Translation + _referenceMatrix.Forward * MaxRaycastDistance;
+                if (TargetSet) return;
+                Vector3D raycastTarget = _referenceMatrix.Translation + _referenceMatrix.Forward * _maxRaycastDistance;
                 FireLaser(raycastTarget, 0);
             }
 
@@ -241,6 +252,7 @@ namespace IngameScript
                 if (target.EntityID != Target.EntityID)
                 {
                     Target = target;
+                    TargetAquired = false;
                 }
                 else
                 {
@@ -251,8 +263,20 @@ namespace IngameScript
             public void AppendOverview(StringBuilder sb)
             {
                 sb.AppendLine($"[LASER {ID}]");
-                sb.Append("  LOCKED: ").AppendLine(HasTarget ? "YES" : "NO");
-                sb.Append("  RNG: ").AppendFormat("{0:F0} m", MaxRaycastDistance);
+                sb.Append("  RNG: ").AppendFormat("{0:F0} m", _maxRaycastDistance).AppendLine();
+                sb.Append("  STATUS: ");
+                if (TargetAquired)
+                {
+                    sb.Append("LOCKED");
+                }
+                else if (TargetSet)
+                {
+                    sb.Append("AQUIRING");
+                }
+                else
+                {
+                    sb.Append("IDLE");
+                }
             }
         }
     }

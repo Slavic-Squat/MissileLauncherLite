@@ -56,6 +56,7 @@ namespace IngameScript
             {
                 NumBays = Config.Get("Missiles", "NumBays").ToInt32(1);
                 Config.Set("Missiles", "NumBays", NumBays);
+                MePb.CustomData = Config.ToString();
 
                 for (int i = 0; i < NumBays; i++)
                 {
