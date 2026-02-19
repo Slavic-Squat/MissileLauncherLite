@@ -35,6 +35,7 @@ namespace IngameScript
 
             public IReadOnlyDictionary<long, EntityInfoExt> Targets => _targets;
             public long LockedTargetID => _lockedTargetID;
+            public bool Searching => _searching;
             public IReadOnlyDictionary<string, TargetingLaser> TargetingLasers => _targetingLasers;
 
             public TargetCoordinator()
@@ -111,13 +112,13 @@ namespace IngameScript
                 }
 
                 _targetsToRemove.Clear();
-                foreach (var targetKey in _targets.Keys)
+                foreach (var target in _targets.Values)
                 {
-                    double timeSinceLastDetection = globalTime - _targets[targetKey].TimeRecorded;
+                    double timeSinceLastDetection = globalTime - target.TimeRecorded;
 
                     if (timeSinceLastDetection > 5f)
                     {
-                        _targetsToRemove.Add(targetKey);
+                        _targetsToRemove.Add(target.EntityID);
                     }
                 }
 

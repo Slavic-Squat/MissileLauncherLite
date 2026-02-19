@@ -52,13 +52,13 @@ namespace IngameScript
                 _runCounter++;
 
                 _allEntities.Clear();
-                foreach (var target in Targets)
+                foreach (var kvp in Targets)
                 {
-                    _allEntities[target.Key] = target.Value;
+                    _allEntities[kvp.Key] = kvp.Value;
                 }
-                foreach (var missile in MyMissiles)
+                foreach (var kvp in MyMissiles)
                 {
-                    _allEntities[missile.Key] = missile.Value;
+                    _allEntities[kvp.Key] = kvp.Value;
                 }
 
                 if (_runCounter % 5 == 0)

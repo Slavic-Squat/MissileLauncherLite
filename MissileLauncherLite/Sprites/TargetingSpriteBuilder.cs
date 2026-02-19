@@ -159,7 +159,7 @@ namespace IngameScript
                     Data = "Radial_Grid_0",
                     Position = _screenBounds.Center,
                     Size = _screenBounds.Size * _scale,
-                    Color = new Color(128, 128, 128, 255),
+                    Color = Color.Gray,
                     Alignment = TextAlignment.CENTER,
                     RotationOrScale = 0f
                 };
@@ -172,7 +172,7 @@ namespace IngameScript
                     Data = "Radial_Grad_0",
                     Position = _screenBounds.Center,
                     Size = _screenBounds.Size * _scale,
-                    Color = new Color(1, 89, 68, 255),
+                    Color = new Color(Color.DeepSkyBlue, 0.25f),
                     Alignment = TextAlignment.CENTER,
                     RotationOrScale = 0f
                 };
@@ -185,7 +185,7 @@ namespace IngameScript
                     Data = "StarryBackground",
                     Position = _screenBounds.Center,
                     Size = _screenBounds.Size * _scale,
-                    Color = new Color(200, 200, 200, 255),
+                    Color = Color.LightGray,
                     Alignment = TextAlignment.CENTER,
                     RotationOrScale = 0f
                 };
@@ -242,11 +242,8 @@ namespace IngameScript
 
                 PlaneD gridPlaneWorld = new PlaneD(cameraTargetWorld.Translation, cameraTargetWorld.Up);
 
-                foreach (var kvp in entities)
+                foreach (var entity in entities.Values)
                 {
-                    EntityInfoExt entity = kvp.Value;
-                    long key = kvp.Key;
-
                     double distance = Vector3D.Distance(cameraTargetWorld.Translation, entity.Position);
 
                     if (distance > 12000f * _scopeScale)
@@ -291,7 +288,7 @@ namespace IngameScript
                     }
                     else
                     {
-                        spriteName = "Target_0";
+                        spriteName = "Target_1";
                         spriteSize = new Vector2(32, 32) * _resScale;
                     }
 
@@ -306,10 +303,10 @@ namespace IngameScript
                         RotationOrScale = 0f,
                     };
 
-                    MySpriteExt MySpriteExtEntity = new MySpriteExt(tempSprite, entityPosNDC.Z);
-                    MyEntitySprite entitySprite = new MyEntitySprite(entity, MySpriteExtEntity);
+                    MySpriteExt mySpriteExtEntity = new MySpriteExt(tempSprite, entityPosNDC.Z);
+                    MyEntitySprite entitySprite = new MyEntitySprite(entity, mySpriteExtEntity);
 
-                    _entitySprites.Add(key, entitySprite);
+                    _entitySprites.Add(entity.EntityID, entitySprite);
 
                     MySpriteExt selectorSpriteExt = default(MySpriteExt);
 
@@ -320,8 +317,8 @@ namespace IngameScript
                             Type = SpriteType.TEXTURE,
                             Data = "Selector_0",
                             Position = entityPosPixel,
-                            Size = MySpriteExtEntity.Sprite.Size * 1.5f,
-                            Color = UIConfig.SelectorColor,
+                            Size = mySpriteExtEntity.Sprite.Size * 1.5f,
+                            Color = Color.OrangeRed,
                             Alignment = TextAlignment.CENTER,
                             RotationOrScale = 0f,
                         };
@@ -374,7 +371,7 @@ namespace IngameScript
 
                     if ((Vector3D.Dot(cameraPositionWorld, gridPlaneWorld.Normal) + gridPlaneWorld.D) * (Vector3D.Dot(entityPosWorld, gridPlaneWorld.Normal) + gridPlaneWorld.D) > 0)
                     {
-                        _spritesPostPlane.Add(MySpriteExtEntity);
+                        _spritesPostPlane.Add(mySpriteExtEntity);
                         _spritesPostPlane.Add(baseSpriteExt);
                         _spritesPostPlane.Add(stemSpriteExt);
 
@@ -385,7 +382,7 @@ namespace IngameScript
                     }
                     else
                     {
-                        _spritesPrePlane.Add(MySpriteExtEntity);
+                        _spritesPrePlane.Add(mySpriteExtEntity);
                         _spritesPrePlane.Add(baseSpriteExt);
                         _spritesPrePlane.Add(stemSpriteExt);
 

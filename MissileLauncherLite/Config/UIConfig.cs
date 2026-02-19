@@ -24,11 +24,10 @@ namespace IngameScript
     {
         public static class UIConfig
         {
-            public static Color SelectorColor = new Color(252, 186, 3, 255);
-            public static Color FriendlyColor = new Color(3, 252, 128, 255);
-            public static Color NeutralColor = new Color(252, 144, 3, 255);
-            public static Color HostileColor = new Color(252, 3, 65, 255);
-            public static Color MeColor = new Color(3, 140, 252, 255);
+            public static Color FriendlyColor = Color.GreenYellow;
+            public static Color NeutralColor = Color.Yellow;
+            public static Color HostileColor = Color.Red;
+            public static Color MeColor = Color.CornflowerBlue;
         }
     }
 }

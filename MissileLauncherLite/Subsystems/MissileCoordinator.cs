@@ -110,10 +110,9 @@ namespace IngameScript
                 }
 
                 _idsToRemove.Clear();
-                foreach (var kvp in _myMissiles)
+                foreach (var missile in _myMissiles.Values)
                 {
-                    var missile = kvp.Value;
-                    var missileID = kvp.Key;
+                    var missileID = missile.EntityID;
                     if ((time - missile.TimeRecorded) > 5f)
                     {
                         _idsToRemove.Add(missileID);

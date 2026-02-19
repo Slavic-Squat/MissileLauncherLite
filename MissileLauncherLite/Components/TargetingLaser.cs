@@ -139,7 +139,8 @@ namespace IngameScript
 
                 if (!TargetSet && !_isStatic)
                 {
-                    MoveLaser(0, 0);
+                    Vector3D vectorToAimAt = SystemCoordinator.ReferencePosition + SystemCoordinator.ReferenceWorldMatrix.Forward * 5000;
+                    AimAt(vectorToAimAt, time);
                 }
                 else if (TargetSet)
                 {
@@ -150,7 +151,6 @@ namespace IngameScript
 
             private void AutoTrack(double time)
             {
-                double timeDeltaSeconds = time - _time;
                 double globalTime = SystemCoordinator.GlobalTime;
 
                 double timeSinceLastDetection = globalTime - Target.TimeRecorded;
@@ -163,25 +163,9 @@ namespace IngameScript
                     return;
                 }
 
-                Vector3D estimatedTargetPosLocal = Vector3D.TransformNormal(estimatedTargetPosition - _referenceMatrix.Translation, MatrixD.Transpose(_referenceMatrix));
-                Vector3D estimatedTargetDirLocal = estimatedTargetDistance == 0 ? Vector3D.Zero : estimatedTargetPosLocal / estimatedTargetDistance;
-
                 if (!_isStatic)
                 {
-                    float azimuthInput = 0;
-                    float elevationInput = 0;
-                    if (_hasAzimuthCtrl)
-                    {
-                        double azimuthError = Math.Atan2(-estimatedTargetDirLocal.X, -estimatedTargetDirLocal.Z);
-                        azimuthInput = _azimuthPID.Run((float)azimuthError, (float)timeDeltaSeconds) / _sensitivity;
-                    }
-                    if (_hasElevationCtrl)
-                    {
-                        double elevationError = Math.Asin(estimatedTargetDirLocal.Y);
-                        elevationInput = _elevationPID.Run((float)elevationError, (float)timeDeltaSeconds) / _sensitivity;
-                    }
-
-                    MoveLaser(azimuthInput, elevationInput);
+                    AimAt(estimatedTargetPosition, time);
                 }
 
                 FireLaser(estimatedTargetPosition, 10f);
@@ -258,6 +242,29 @@ namespace IngameScript
                 {
                     Target = Target.Merge(target);
                 }
+            }
+
+            private void AimAt(Vector3D aimTarget, double time)
+            {
+                double timeDeltaSeconds = time - _time;
+                Vector3D aimTargetLocal = Vector3D.TransformNormal(aimTarget - _referenceMatrix.Translation, MatrixD.Transpose(_referenceMatrix));
+                double aimTargetDistance = aimTargetLocal.Length();
+                Vector3D aimTargetDirLocal = aimTargetDistance == 0 ? Vector3D.Zero : aimTargetLocal / aimTargetDistance;
+
+                float azimuthInput = 0;
+                float elevationInput = 0;
+                if (_hasAzimuthCtrl)
+                {
+                    double azimuthError = Math.Atan2(-aimTargetDirLocal.X, -aimTargetDirLocal.Z);
+                    azimuthInput = _azimuthPID.Run((float)azimuthError, (float)timeDeltaSeconds) / _sensitivity;
+                }
+                if (_hasElevationCtrl)
+                {
+                    double elevationError = Math.Asin(aimTargetDirLocal.Y);
+                    elevationInput = _elevationPID.Run((float)elevationError, (float)timeDeltaSeconds) / _sensitivity;
+                }
+
+                MoveLaser(azimuthInput, elevationInput);
             }
 
             public void AppendOverview(StringBuilder sb)
