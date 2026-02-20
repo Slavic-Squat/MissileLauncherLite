@@ -26,7 +26,7 @@ namespace IngameScript
         {
             public static Color FriendlyColor = Color.GreenYellow;
             public static Color NeutralColor = Color.Yellow;
-            public static Color HostileColor = Color.Red;
+            public static Color HostileColor = new Color(255, 64, 64);
             public static Color MeColor = Color.CornflowerBlue;
         }
     }

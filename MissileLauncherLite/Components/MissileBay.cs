@@ -28,7 +28,6 @@ namespace IngameScript
             private double _time;
             private IMyProgrammableBlock _missileComputer;
             private IMyMechanicalConnectionBlock _attachment;
-            private bool _isSelected = false;
             private MyIni _missileConfig = new MyIni();
             private string _missileCustomData = "";
             private double _timeLastRegister;
@@ -41,18 +40,7 @@ namespace IngameScript
             public MissilePayload MissilePayload { get; private set; } = MissilePayload.Unknown;
             public MissileStage MissileStage { get; private set; } = MissileStage.Unknown;
             public long MissileAddress { get; private set; } = -1;
-            public bool IsSelected
-            {
-                get
-                {
-                    return _isSelected;
-                }
-                set
-                {
-                    _isSelected = IsSelectable && value;
-                }
-            }
-            public bool IsSelectable => Status == BayStatus.Ready || Status == BayStatus.Active;
+            public bool IsActivatable => Status == BayStatus.Ready || Status == BayStatus.Active;
 
             public event Action MissileRegistered;
             public event Action MissileUnregistered;
@@ -67,7 +55,7 @@ namespace IngameScript
 
             private void Init()
             {
-                _attachment = AllGridBlocks.Where(b => b is IMyMechanicalConnectionBlock && b.CustomName.ToUpper().Contains($"MISSILE BAY {ID} ATTACHMENT")).FirstOrDefault() as IMyMechanicalConnectionBlock;
+                _attachment = AllGridBlocks.FirstOrDefault(b => b is IMyMechanicalConnectionBlock && b.CustomName.ToUpper().Contains($"MISSILE BAY {ID} ATTACHMENT")) as IMyMechanicalConnectionBlock;
                 if (_attachment == null)
                 {
                     throw new Exception($"No attachment found for Missile Bay {ID}!");
@@ -217,12 +205,16 @@ namespace IngameScript
 
             public void AppendOverview(StringBuilder sb)
             {
-                sb.AppendLine($"[BAY {ID}]");
+                sb.Append("[BAY ").Append(ID).AppendLine("]");
                 sb.Append("  STATUS: ").AppendLine(MiscEnumHelper.GetBayStatusStr(Status));
                 sb.Append("  MISL TYPE: ").AppendLine(MissileEnumHelper.GetMissileTypeStr(MissileType));
                 sb.Append("  MISL GUIDANCE: ").AppendLine(MissileEnumHelper.GetMissileGuidanceStr(MissileGuidanceType));
                 sb.Append("  MISL PAYLOAD: ").AppendLine(MissileEnumHelper.GetMissilePayloadStr(MissilePayload));
-                sb.Append("  MISL STAGE: ").Append(MissileEnumHelper.GetMissileStageStr(MissileStage));
+            }
+
+            public void AppendOverviewShort(StringBuilder sb)
+            {
+                sb.Append("[BAY ").Append(ID).Append("]: ").Append(MiscEnumHelper.GetBayStatusStrShort(Status));
             }
         }
     }

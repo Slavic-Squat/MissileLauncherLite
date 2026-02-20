@@ -31,9 +31,15 @@ namespace IngameScript
             private List<MySpriteExt> _allSprites = new List<MySpriteExt>();
             private IEnumerator<MySpriteExt> _searchingCoroutine;
             private float _res;
-            public HUD(UICoordinator uiCoordinator)
+            private RectangleF _screenBounds;
+            private float _opacity = 0.25f;
+            private StringBuilder _sb = new StringBuilder();
+
+            public HUD(UICoordinator uiCoordinator, float opacity = 0.25f)
             {
+                _screenBounds = new RectangleF(0, 0, _res, _res);
                 _uiCoordinator = uiCoordinator;
+                _opacity = opacity;
                 Init();
             }
 
@@ -68,13 +74,12 @@ namespace IngameScript
                 MePb.CustomData = Config.ToString();
 
                 float n = screenDistanceMeters;
-                float f = 7500f;
                 float l = -screenWidthMeters / 2f + screenHorizontalOffsetMeters;
                 float r = screenWidthMeters / 2f + screenHorizontalOffsetMeters;
                 float b = -screenHeightMeters / 2f + screenVerticalOffsetMeters;
                 float t = screenHeightMeters / 2f + screenVerticalOffsetMeters;
-                _flightHUDSpriteBuilder = new FlightHUDSpriteBuilder(cameraReference, res, l, r, b, t, n, f);
-                _targetingHUDSpriteBuilder = new TargetingHUDSpriteBuilder(cameraReference, res, l, r, b, t, n, f);
+                _flightHUDSpriteBuilder = new FlightHUDSpriteBuilder(cameraReference, res, l, r, b, t, n, 7500f, _opacity);
+                _targetingHUDSpriteBuilder = new TargetingHUDSpriteBuilder(cameraReference, res, l, r, b, t, n, 10f, _opacity);
             }
 
             public void Draw()
@@ -83,6 +88,13 @@ namespace IngameScript
                 var entities = _uiCoordinator.AllEntities;
                 long targetId = _uiCoordinator.TargetCoordinator.LockedTargetID;
                 bool searching = _uiCoordinator.TargetCoordinator.Searching;
+                var missileBays = _uiCoordinator.MissileBays;
+
+                _targetingHUDSpriteBuilder.BuildSprites(entities, targetId);
+                _allSprites.AddRange(_targetingHUDSpriteBuilder.FinalSprites);
+
+                _flightHUDSpriteBuilder.BuildSprites();
+                _allSprites.AddRange(_flightHUDSpriteBuilder.FinalSprites);
 
                 if (_searchingCoroutine != null)
                 {
@@ -102,12 +114,19 @@ namespace IngameScript
                     _allSprites.Add(_searchingCoroutine.Current);
                 }
 
+                int bayIndex = 0;
+                foreach (var missileBay in missileBays.Values)
+                {
+                    float posX = 10f;
+                    float posY = _res - 60f - bayIndex * 50f;
+                    bayIndex++;
 
-                _targetingHUDSpriteBuilder.BuildSprites(entities, targetId);
-                _allSprites.AddRange(_targetingHUDSpriteBuilder.FinalSprites);
+                    _sb.Clear();
+                    missileBay.AppendOverviewShort(_sb);
 
-                _flightHUDSpriteBuilder.BuildSprites();
-                _allSprites.AddRange(_flightHUDSpriteBuilder.FinalSprites);
+                    var sprite = SpriteHelper.CreateText(new Vector2(posX, posY), _sb, new Color(Color.White, _opacity), maxHeight: 40f, fontID: "Monospace");
+                    _allSprites.Add(new MySpriteExt(sprite, 0.00001f));
+                }
 
                 var frame = _hudDisplay.DrawFrame();
                 foreach (var sprite in _allSprites)
@@ -128,7 +147,7 @@ namespace IngameScript
                     Type = SpriteType.TEXTURE,
                     Data = "Selector_0",
                     Position = new Vector2(_res / 2f, _res / 2f),
-                    Color = new Color(Color.Orange, 0.1f),
+                    Color = new Color(Color.Orange, _opacity),
                     Size = new Vector2(128f, 128f),
                     Alignment = TextAlignment.CENTER
                 };
@@ -151,13 +170,13 @@ namespace IngameScript
                     if (entity.IsValid)
                     {
                         _uiCoordinator.TargetCoordinator.LockTarget(entity.EntityID);
-                        temp.Color = new Color(Color.GreenYellow, 0.1f);
+                        temp.Color = new Color(Color.GreenYellow, _opacity);
                         yieldCounter++;
                         yield return new MySpriteExt(temp, 0.00001f);
                     }
                     else if (yieldCounter % 24 < 12)
                     {
-                        temp.Color = new Color(Color.Orange, 0.1f);
+                        temp.Color = new Color(Color.Orange, _opacity);
                         yieldCounter++;
                         yield return new MySpriteExt(temp, 0.00001f);
                     }

@@ -46,6 +46,20 @@ namespace IngameScript
                     default: return "N/A";
                 }
             }
+
+            public static string GetBayStatusStrShort(BayStatus status)
+            {
+                switch (status)
+                {
+                    case BayStatus.Empty: return "EMPTY";
+                    case BayStatus.Building: return "BLD";
+                    case BayStatus.Fueling: return "FUEL";
+                    case BayStatus.Ready: return "RDY";
+                    case BayStatus.Active: return "ACT";
+                    case BayStatus.Launching: return "LNCH";
+                    default: return "N/A";
+                }
+            }
         }
     }
 }

@@ -27,30 +27,43 @@ namespace IngameScript
             private List<MySpriteExt> _sprites = new List<MySpriteExt>();
             private List<MySpriteExt> _staticSprites = new List<MySpriteExt>();
             private List<MySpriteExt> _finalSprites = new List<MySpriteExt>();
-            private Dictionary<int, Vector3D> _demPosGravLocal = new Dictionary<int, Vector3D>();
+            private Dictionary<int, Vector3D> _pitchPos = new Dictionary<int, Vector3D>();
+            private Dictionary<int, Vector3D> _rollPos = new Dictionary<int, Vector3D>();
             private MatrixD _projectionMatrix = MatrixD.Identity;
             private RectangleF _screenBounds;
             private IMyTerminalBlock _cameraReference;
             private float _resScale = 1f;
             private float _l, _r, _b, _t, _n, _f;
+            private float _opacity = 0.25f;
+            private StringBuilder _sb = new StringBuilder();
             public IReadOnlyList<MySpriteExt> FinalSprites => _finalSprites;
-            public FlightHUDSpriteBuilder(IMyTerminalBlock cameraReference, float res, float l, float r, float b, float t, float n, float f)
+            public FlightHUDSpriteBuilder(IMyTerminalBlock cameraReference, float res, float l, float r, float b, float t, float n, float f, float opacity = 0.25f)
             {
                 _resScale = res / 1024f;
                 _cameraReference = cameraReference;
                 _screenBounds = new RectangleF(0, 0, res, res);
+
                 for (int i = 0; i < 19; i++)
                 {
                     int angle = -90 + i * 10;
                     float radians = MathHelper.ToRadians(angle);
-                    _demPosGravLocal[angle] = new Vector3(0, Math.Sin(radians), -Math.Cos(radians));
+                    _pitchPos[angle] = new Vector3(0, Math.Sin(radians), -Math.Cos(radians)) * 1.1f * n;
                 }
+
+                for (int i = 0; i < 37; i++)
+                {
+                    int angle = -180 + i * 10;
+                    float radians = MathHelper.ToRadians(angle);
+                    _rollPos[angle] = new Vector3(Math.Sin(radians), Math.Cos(radians), 0) * 1.1f * n;
+                }
+
                 _l = l;
                 _r = r;
                 _b = b;
                 _t = t;
                 _n = n;
                 _f = f;
+                _opacity = opacity;
                 _projectionMatrix = MatrixD.CreatePerspectiveOffCenter(l, r, b, t, n, f);
                 BuildStaticSprites();
             }
@@ -65,7 +78,7 @@ namespace IngameScript
                     Data = "AH_BoreSight",
                     Position = _screenBounds.Center,
                     Size = new Vector2(64f, 64f) * _resScale,
-                    Color = new Color(Color.White, 0.1f),
+                    Color = new Color(Color.White, _opacity),
                     Alignment = TextAlignment.CENTER,
                     RotationOrScale = -(float)Math.PI / 2f
                 };
@@ -78,12 +91,88 @@ namespace IngameScript
                 _sprites.Clear();
                 _finalSprites.Clear();
 
-                RectangleF speedIndBounds = new RectangleF(_screenBounds.X + 20f * _resScale, _screenBounds.Y + 80f * _resScale, 250f * _resScale, 80f * _resScale);
-                RectangleF altIndBounds = new RectangleF(speedIndBounds.X, speedIndBounds.Bottom + 10f * _resScale, 250f * _resScale, 80f * _resScale);
-                RectangleF rollIndBounds = new RectangleF(altIndBounds.X, altIndBounds.Bottom + 10f * _resScale, 250f * _resScale, 80f * _resScale);
-
                 MatrixD cameraFrame = _cameraReference.WorldMatrix;
                 MatrixD viewMatrix = MatrixD.CreateLookAt(cameraFrame.Translation, cameraFrame.Translation + cameraFrame.Forward, cameraFrame.Up);
+
+                Vector3D velocity = SystemCoordinator.ReferenceVelocity;
+                double speed = velocity.Length();
+                Vector2 speedTextPos = new Vector2(10f, 50f) * _resScale;
+                _sb.Clear();
+                _sb.AppendFormat("SPD: {0:F0}m/s", speed);
+                MySprite speedTextSprite = SpriteHelper.CreateText(speedTextPos, _sb, new Color(Color.White, _opacity), maxHeight: 40f * _resScale, fontID: "Monospace");
+                _sprites.Add(new MySpriteExt(speedTextSprite, 0.05f));
+
+                Vector3D velocityDir;
+                if (speed <= 1)
+                {
+                    velocityDir = cameraFrame.Forward * 10;
+                }
+                else
+                {
+                    velocityDir = (velocity / speed) * 10;
+
+                }
+
+                Vector3D velVectorPosView = Vector3D.TransformNormal(velocityDir, viewMatrix);
+                Vector4D velVectorPosClip = Vector4D.Transform(new Vector4(velVectorPosView, 1), _projectionMatrix);
+                Vector3 velVectorPosNDC = new Vector3(velVectorPosClip.X / velVectorPosClip.W, velVectorPosClip.Y / velVectorPosClip.W, velVectorPosClip.Z / velVectorPosClip.W);
+                if (Math.Abs(velVectorPosNDC.X) < 1f && Math.Abs(velVectorPosNDC.Y) < 1f)
+                {
+                    Vector2 posPixel = new Vector2((1 + velVectorPosNDC.X) * _screenBounds.Width / 2f, (1 - velVectorPosNDC.Y) * _screenBounds.Height / 2f);
+                    Color color = new Color(Color.GreenYellow, _opacity);
+
+                    if (velVectorPosClip.W < 0)
+                    {
+                        color = new Color(Color.OrangeRed, _opacity);
+                    }
+                    MySprite velSprite = new MySprite()
+                    {
+                        Type = SpriteType.TEXTURE,
+                        Data = "AH_VelocityVector",
+                        Position = posPixel,
+                        Size = new Vector2(96f, 96f) * _resScale,
+                        Color = color,
+                        Alignment = TextAlignment.CENTER
+                    };
+
+                    _sprites.Add(new MySpriteExt(velSprite, 0.95f));
+                }
+                else
+                {
+                    float max = Math.Max(Math.Abs(velVectorPosNDC.X), Math.Abs(velVectorPosNDC.Y));
+
+                    Vector2 posPixel = new Vector2((1 + velVectorPosNDC.X / max) * (_screenBounds.Width - 64f * _resScale) / 2f, (1 - velVectorPosNDC.Y / max) * (_screenBounds.Height - 64f * _resScale) / 2f) + 32f * _resScale;
+                    double rot = Math.Atan2(posPixel.X - _screenBounds.Center.X, -(posPixel.Y - _screenBounds.Center.Y));
+
+                    MySprite dirSprite = new MySprite()
+                    {
+                        Type = SpriteType.TEXTURE,
+                        Data = "Triangle",
+                        Position = posPixel,
+                        Size = new Vector2(64f, 64f) * _resScale,
+                        Color = velVectorPosClip.W < 0 ? new Color(Color.OrangeRed, _opacity) : new Color(Color.GreenYellow, _opacity),
+                        Alignment = TextAlignment.CENTER,
+                        RotationOrScale = (float)rot
+                    };
+
+                    _sprites.Add(new MySpriteExt(dirSprite, 0.95f));
+
+                    posPixel = new Vector2(_screenBounds.Width - posPixel.X, _screenBounds.Height - posPixel.Y);
+                    rot = Math.Atan2(posPixel.X - _screenBounds.Center.X, -(posPixel.Y - _screenBounds.Center.Y));
+
+                    MySprite dirSpriteNegative = new MySprite()
+                    {
+                        Type = SpriteType.TEXTURE,
+                        Data = "Triangle",
+                        Position = posPixel,
+                        Size = new Vector2(64f, 64f) * _resScale,
+                        Color = velVectorPosClip.W < 0 ? new Color(Color.GreenYellow, _opacity) : new Color(Color.OrangeRed, _opacity),
+                        Alignment = TextAlignment.CENTER,
+                        RotationOrScale = (float)rot
+                    };
+
+                    _sprites.Add(new MySpriteExt(dirSpriteNegative, 0.95f));
+                }
 
                 Vector3D gravVector = SystemCoordinator.ReferenceGravity;
                 if (gravVector.LengthSquared() > 0.01f)
@@ -98,10 +187,17 @@ namespace IngameScript
                     gravAlignedView.Up = upVector;
                     gravAlignedView.Backward = backwardVector;
 
-                    double rollRadians = -Math.Atan2(gravAlignedView.M12, gravAlignedView.M11);
+                    gravAlignedView = MatrixD.Transpose(gravAlignedView);
+                    double rollRadians = Math.Atan2(-gravAlignedView.M21, gravAlignedView.M11);
                     double rollDeg = MathHelper.ToDegrees(rollRadians);
 
-                    MySprite rollTextSprite = SpriteHelper.CreateText(rollIndBounds, $"ROLL: {rollDeg:F0}°", new Color(Color.White, 0.1f), maxScale: 1f, alignment: TextAlignment.LEFT, vertCentered: true, padding: 10f * _resScale);
+                    double pitchRadians = Math.Asin(-gravAlignedView.M32);
+                    double pitchDeg = MathHelper.ToDegrees(pitchRadians);
+
+                    Vector2 rollTextPos = new Vector2(10f, 100f) * _resScale;
+                    _sb.Clear();
+                    _sb.AppendFormat("ROLL: {0:F0}°", rollDeg);
+                    MySprite rollTextSprite = SpriteHelper.CreateText(rollTextPos, _sb, new Color(Color.White, _opacity), maxHeight: 40f * _resScale, fontID: "Monospace");
                     _sprites.Add(new MySpriteExt(rollTextSprite, 0.05f));
 
                     double alt = SystemCoordinator.ReferenceSurfaceAlt;
@@ -110,12 +206,18 @@ namespace IngameScript
                         alt = SystemCoordinator.ReferenceSeaLevelAlt;
                     }
 
-                    MySprite altTextSprite = SpriteHelper.CreateText(altIndBounds, $"ALT: {alt:F0}m", new Color(Color.White, 0.1f), maxScale: 1f, alignment: TextAlignment.LEFT, vertCentered: true, padding: 10f * _resScale);
+                    Vector2 altTextPos = new Vector2(1024f - 10f, 50f) * _resScale;
+                    _sb.Clear();
+                    _sb.AppendFormat("ALT: {0:F0}m", alt);
+                    MySprite altTextSprite = SpriteHelper.CreateText(altTextPos, _sb, new Color(Color.White, _opacity), maxHeight: 40f * _resScale, fontID: "Monospace", alignment: TextAlignment.RIGHT);
                     _sprites.Add(new MySpriteExt(altTextSprite, 0.05f));
 
-                    foreach (var kvp in _demPosGravLocal)
+                    foreach (var kvp in _pitchPos)
                     {
-                        Vector3D posView = Vector3D.TransformNormal(kvp.Value, gravAlignedView);
+                        MatrixD pitch = MatrixD.CreateRotationX(-pitchRadians);
+                        MatrixD roll = MatrixD.CreateRotationZ(-rollRadians);
+
+                        Vector3D posView = Vector3D.TransformNormal(kvp.Value, pitch * roll);
                         Vector4D posClip = Vector4D.Transform(new Vector4D(posView, 1), _projectionMatrix);
                         Vector3 posNDC = new Vector3(posClip.X / posClip.W, posClip.Y / posClip.W, posClip.Z / posClip.W);
 
@@ -150,101 +252,23 @@ namespace IngameScript
                             Data = spriteName,
                             Position = pixelPos,
                             Size = spriteSize,
-                            Color = new Color(Color.White, 0.1f),
+                            Color = new Color(Color.White, _opacity),
                             Alignment = TextAlignment.CENTER,
                             RotationOrScale = (float)rollRadians
                         };
 
                         _sprites.Add(new MySpriteExt(demSprite, 1f));
 
-                        Vector2 textSize = new Vector2(96f, 48f);
-                        Vector2 textLeftPos = pixelPos + new Vector2(-(spriteSize.X / 2f + textSize.X / 2f) * (float)Math.Cos(rollRadians), -(spriteSize.X / 2f + textSize.X / 2f) * (float)Math.Sin(rollRadians));
-                        RectangleF textLeftBounds = new RectangleF(textLeftPos.X - textSize.X / 2f, textLeftPos.Y - textSize.Y / 2f, textSize.X, textSize.Y);
-                        Vector2 textRightPos = pixelPos + new Vector2((spriteSize.X / 2f + textSize.X / 2f) * (float)Math.Cos(rollRadians), (spriteSize.X / 2f + textSize.X / 2f) * (float)Math.Sin(rollRadians));
-                        RectangleF textRightBounds = new RectangleF(textRightPos.X - textSize.X / 2f, textRightPos.Y - textSize.Y / 2f, textSize.X, textSize.Y);
+                        Vector2 textLeftPos = pixelPos + new Vector2(-(spriteSize.X / 2f + 60f * _resScale) * (float)Math.Cos(rollRadians), -(spriteSize.X / 2f + 60f * _resScale) * (float)Math.Sin(rollRadians));
+                        Vector2 textRightPos = pixelPos + new Vector2((spriteSize.X / 2f + 60f * _resScale) * (float)Math.Cos(rollRadians), (spriteSize.X / 2f + 60f * _resScale) * (float)Math.Sin(rollRadians));
 
-                        string degreeStr = kvp.Key.ToString();
-                        MySprite textLeftSprite = SpriteHelper.CreateText(textLeftBounds, degreeStr, new Color(Color.White, 0.1f), alignment: TextAlignment.CENTER, vertCentered: true);
+                        _sb.Clear();
+                        _sb.Append(kvp.Key);
+                        MySprite textLeftSprite = SpriteHelper.CreateText(textLeftPos, _sb, new Color(Color.White, _opacity), maxHeight: 40f, maxWidth: 40f * _resScale, alignment: TextAlignment.CENTER, vertCentered: true, fontID: "Monospace");
                         _sprites.Add(new MySpriteExt(textLeftSprite, 1f));
-                        MySprite textRightSprite = SpriteHelper.CreateText(textRightBounds, degreeStr, new Color(Color.White, 0.1f), alignment: TextAlignment.CENTER, vertCentered: true);
+                        MySprite textRightSprite = SpriteHelper.CreateText(textRightPos, _sb, new Color(Color.White, _opacity), maxHeight: 40f, maxWidth: 40f * _resScale, alignment: TextAlignment.CENTER, vertCentered: true, fontID: "Monospace");
                         _sprites.Add(new MySpriteExt(textRightSprite, 1f));
                     }
-                }
-                Vector3D velocity = SystemCoordinator.ReferenceVelocity;
-                double speed = velocity.Length();
-                MySprite speedTextSprite = SpriteHelper.CreateText(speedIndBounds, $"SPD: {speed:F0}m/s", new Color(Color.White, 0.1f), maxScale: 1f, alignment: TextAlignment.LEFT, vertCentered: true, padding: 10f * _resScale);
-                _sprites.Add(new MySpriteExt(speedTextSprite, 0.05f));
-
-                Vector3D velocityDir;
-                if (speed <= 1)
-                {
-                    velocityDir = cameraFrame.Forward;
-                }
-                else
-                {
-                    velocityDir = velocity / speed;
-                    
-                }
-
-                Vector3D velVectorPosView = Vector3D.TransformNormal(velocityDir, viewMatrix);
-                Vector4D velVectorPosClip = Vector4D.Transform(new Vector4(velVectorPosView, 1), _projectionMatrix);
-                Vector3 velVectorPosNDC = new Vector3(velVectorPosClip.X / velVectorPosClip.W, velVectorPosClip.Y / velVectorPosClip.W, velVectorPosClip.Z / velVectorPosClip.W);
-                if (Math.Abs(velVectorPosNDC.X) < 1f && Math.Abs(velVectorPosNDC.Y) < 1f)
-                {
-                    Vector2 posPixel = new Vector2((1 + velVectorPosNDC.X) * _screenBounds.Width / 2f, (1 - velVectorPosNDC.Y) * _screenBounds.Height / 2f);
-                    Color color = new Color(Color.GreenYellow, 0.1f);
-
-                    if (velVectorPosClip.W < 0)
-                    {
-                        color = new Color(Color.OrangeRed, 0.1f);
-                    }
-                    MySprite velSprite = new MySprite()
-                    {
-                        Type = SpriteType.TEXTURE,
-                        Data = "AH_VelocityVector",
-                        Position = posPixel,
-                        Size = new Vector2(96f, 96f) * _resScale,
-                        Color = color,
-                        Alignment = TextAlignment.CENTER
-                    };
-
-                    _sprites.Add(new MySpriteExt(velSprite, 0.95f));
-                }
-                else
-                {
-                    float max = Math.Max(Math.Abs(velVectorPosNDC.X), Math.Abs(velVectorPosNDC.Y));
-                    
-                    Vector2 posPixel = new Vector2((1 + velVectorPosNDC.X / max) * (_screenBounds.Width - 64f * _resScale) / 2f, (1 - velVectorPosNDC.Y / max) * (_screenBounds.Height - 64f * _resScale) / 2f) + 32f * _resScale;
-                    double rot = Math.Atan2(posPixel.X - _screenBounds.Center.X, -(posPixel.Y - _screenBounds.Center.Y));
-
-                    MySprite dirSprite = new MySprite()
-                    {
-                        Type = SpriteType.TEXTURE,
-                        Data = "Triangle",
-                        Position = posPixel,
-                        Size = new Vector2(64f, 64f) * _resScale,
-                        Color = velVectorPosClip.W < 0 ? new Color(Color.OrangeRed, 0.1f) : new Color(Color.GreenYellow, 0.1f),
-                        Alignment = TextAlignment.CENTER,
-                        RotationOrScale = (float)rot
-                    };
-
-                    _sprites.Add(new MySpriteExt(dirSprite, 0.95f));
-
-                    posPixel = new Vector2(_screenBounds.Width - posPixel.X, _screenBounds.Height - posPixel.Y);
-                    rot = Math.Atan2(posPixel.X - _screenBounds.Center.X, -(posPixel.Y - _screenBounds.Center.Y));
-
-                    MySprite dirSpriteNegative = new MySprite()
-                    {
-                        Type = SpriteType.TEXTURE,
-                        Data = "Triangle",
-                        Position = posPixel,
-                        Size = new Vector2(64f, 64f) * _resScale,
-                        Color = velVectorPosClip.W < 0 ? new Color(Color.GreenYellow, 0.1f) : new Color(Color.OrangeRed, 0.1f),
-                        Alignment = TextAlignment.CENTER,
-                        RotationOrScale = (float)rot
-                    };
-
-                    _sprites.Add(new MySpriteExt(dirSpriteNegative, 0.95f));
                 }
 
                 _finalSprites.AddRange(_staticSprites);

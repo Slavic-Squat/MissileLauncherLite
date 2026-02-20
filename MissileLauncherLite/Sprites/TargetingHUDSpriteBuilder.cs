@@ -35,9 +35,10 @@ namespace IngameScript
             private RectangleF _screenBounds;
             private float _resScale = 1f;
             private float _l, _r, _b, _t, _n, _f;
+            private float _opacity = 0.25f;
             private MatrixD _projectionMatrix;
 
-            public TargetingHUDSpriteBuilder(IMyTerminalBlock cameraReference, float res, float l, float r, float b, float t, float n, float f)
+            public TargetingHUDSpriteBuilder(IMyTerminalBlock cameraReference, float res, float l, float r, float b, float t, float n, float f, float opacity = 0.25f)
             {
                 _resScale = res / 1024f;
                 _screenBounds = new RectangleF(0, 0, res, res);
@@ -48,6 +49,7 @@ namespace IngameScript
                 _t = t;
                 _n = n;
                 _f = f;
+                _opacity = opacity;
                 _projectionMatrix = MatrixD.CreatePerspectiveOffCenter(l, r, b, t, n, f);
                 BuildStaticSprites();
             }
@@ -84,19 +86,19 @@ namespace IngameScript
                     switch (entity.Relation)
                     {
                         case EntityRelation.Me:
-                            spriteColor = new Color(UIConfig.MeColor, 0.1f);
+                            spriteColor = new Color(UIConfig.MeColor, _opacity);
                             break;
                         case EntityRelation.Neutral:
-                            spriteColor = new Color(UIConfig.NeutralColor, 0.1f);
+                            spriteColor = new Color(UIConfig.NeutralColor, _opacity);
                             break;
                         case EntityRelation.Friendly:
-                            spriteColor = new Color(UIConfig.FriendlyColor, 0.1f);
+                            spriteColor = new Color(UIConfig.FriendlyColor, _opacity);
                             break;
                         case EntityRelation.Hostile:
-                            spriteColor = new Color(UIConfig.HostileColor, 0.1f);
+                            spriteColor = new Color(UIConfig.HostileColor, _opacity);
                             break;
                         default:
-                            spriteColor = new Color(Color.White, 0.1f);
+                            spriteColor = new Color(Color.White, _opacity);
                             break;
                     }
 
@@ -138,7 +140,7 @@ namespace IngameScript
                             Data = "Selector_0",
                             Position = entityPosPixel,
                             Size = mySpriteExtEntity.Sprite.Size * 1.5f,
-                            Color = new Color(Color.OrangeRed, 0.1f),
+                            Color = new Color(Color.OrangeRed, _opacity),
                             Alignment = TextAlignment.CENTER,
                             RotationOrScale = 0f,
                         };

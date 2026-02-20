@@ -93,7 +93,7 @@ namespace IngameScript
                 _debugStringBuilder.Append("Max Run Time: ").AppendFormat("{0:F2}ms", _runTimeInfo.Max).AppendLine();
                 _debugStringBuilder.Append("Avg Run Time: ").AppendFormat("{0:F2}ms", _runTimeInfo.Average).AppendLine();
                 _debugStringBuilder.Append("--------------------------------------");
-                _debugScreen.WriteText(_debugStringBuilder.ToString());
+                _debugScreen.WriteText(_debugStringBuilder);
             }
 
             if (argument != null)
