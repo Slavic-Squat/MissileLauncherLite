@@ -37,10 +37,11 @@ namespace IngameScript
             private float _l, _r, _b, _t, _n, _f;
             private float _opacity = 0.25f;
             private MatrixD _projectionMatrix;
+            private StringBuilder _sb = new StringBuilder();
 
             public TargetingHUDSpriteBuilder(IMyTerminalBlock cameraReference, RectangleF screenBounds, float l, float r, float b, float t, float n, float f, float opacity = 0.25f)
             {
-                _resScale = Math.Max(_screenBounds.Width, _screenBounds.Height) / 1024f;
+                _resScale = Math.Max(screenBounds.Width, screenBounds.Height) / 1024f;
                 _screenBounds = screenBounds;
                 _cameraReference = cameraReference;
                 _l = l;
@@ -65,10 +66,10 @@ namespace IngameScript
                 _finalSprites.Clear();
                 _entitySprites.Clear();
 
-
                 MatrixD cameraFrame = _cameraReference.WorldMatrix;
                 MatrixD viewMatrix = MatrixD.CreateLookAt(cameraFrame.Translation, cameraFrame.Translation + cameraFrame.Forward, cameraFrame.Up);
 
+                Vector3D selfVel = SystemCoordinator.ReferenceVelocity;
                 foreach (var entity in entities.Values)
                 {
                     Vector3D entityPosWorld = entity.Position;
@@ -78,6 +79,25 @@ namespace IngameScript
                     Vector2 entityPosPixel = new Vector2((1 + entityPosNDC.X) * _screenBounds.Width / 2f, (1 - entityPosNDC.Y) * _screenBounds.Height / 2f);
                     float entityDepthScale = (float)(0.5f * _f / -entityPosView.Z);
                     entityDepthScale = MathHelper.Clamp(entityDepthScale, 0.75f, 1.5f);
+
+
+                    Vector3D entityRelVelView = Vector3D.TransformNormal(entity.Velocity - selfVel, viewMatrix);
+                    double dist = entityPosView.Length();
+                    Vector3D range = dist > 0 ? entityPosView / dist : Vector3D.Zero;
+                    double closingSpeed = Vector3D.Dot(entityRelVelView, -range);
+                    entityRelVelView.Z = 0;
+                    Vector3D entityVelPointView = entityPosView + entityRelVelView;
+                    Vector4D entityVelPointClip = Vector4D.Transform(new Vector4D(entityVelPointView, 1), _projectionMatrix);
+                    Vector3 entityVelPointNDC = new Vector3(entityVelPointClip.X / entityVelPointClip.W, entityVelPointClip.Y / entityVelPointClip.W, entityVelPointClip.Z / entityVelPointClip.W);
+                    Vector2 entityVelPointPixel = new Vector2((1 + entityVelPointNDC.X) * _screenBounds.Width / 2f, (1 - entityVelPointNDC.Y) * _screenBounds.Height / 2f);
+
+                    Vector2 velPixel = entityVelPointPixel - entityPosPixel;
+                    float velLengthPixel = velPixel.Length();
+                    Vector2 velDirPixel = velLengthPixel > 0 ? velPixel / velLengthPixel : Vector2.Zero;
+                    velLengthPixel = MathHelper.Clamp(velLengthPixel, 0, 50f * _resScale) * entityDepthScale;
+                    velPixel = velDirPixel * velLengthPixel;
+                    Vector2 velPosPixel = entityPosPixel + velPixel / 2f;
+                    float velAngle = (float)Math.Atan2(-velPixel.Y, velPixel.X);
 
                     string spriteName = default(string);
                     Vector2 spriteSize = default(Vector2);
@@ -130,16 +150,32 @@ namespace IngameScript
                     _sprites.Add(mySpriteExtEntity);
                     _entitySprites.Add(entity.EntityID, entitySprite);
 
+                    tempSprite = new MySprite()
+                    {
+                        Type = SpriteType.TEXTURE,
+                        Data = "SquareSimple",
+                        Position = velPosPixel,
+                        Size = new Vector2(velLengthPixel, 4f * _resScale),
+                        Color = spriteColor,
+                        Alignment = TextAlignment.CENTER,
+                        RotationOrScale = -velAngle
+                    };
+
+                    MySpriteExt velSprite = new MySpriteExt(tempSprite, entityPosNDC.Z - 0.001f);
+                    _sprites.Add(velSprite);
+
                     MySpriteExt selectorSpriteExt = default(MySpriteExt);
 
                     if (entity.EntityID == targetedID)
                     {
+                        double lateralSpeed = entityRelVelView.Length();
+
                         tempSprite = new MySprite()
                         {
                             Type = SpriteType.TEXTURE,
                             Data = "Selector_0",
                             Position = entityPosPixel,
-                            Size = mySpriteExtEntity.Sprite.Size * 1.5f,
+                            Size = spriteSize * entityDepthScale * 1.5f,
                             Color = new Color(Color.OrangeRed, _opacity),
                             Alignment = TextAlignment.CENTER,
                             RotationOrScale = 0f,
@@ -147,6 +183,16 @@ namespace IngameScript
 
                         selectorSpriteExt = new MySpriteExt(tempSprite, entityPosNDC.Z - 0.001f);
                         _sprites.Add(selectorSpriteExt);
+
+                        _sb.Clear();
+                        _sb.Append("RNG: ");
+                        UIUtilities.AppendDistance(_sb, dist);
+                        _sb.AppendLine();
+                        _sb.AppendFormat("SPD: {0:F1} m/s", closingSpeed);
+
+                        Vector2 textPos = entityPosPixel + spriteSize * entityDepthScale * 0.75f + new Vector2(20f * _resScale, 0);
+                        tempSprite = SpriteHelper.CreateText(textPos, _sb, new Color(Color.White, _opacity), scale: 1f * _resScale * entityDepthScale);
+                        _sprites.Add(new MySpriteExt(tempSprite, entityPosNDC.Z - 0.001f));
                     }
 
                     _finalSprites.AddRange(_staticSprites);

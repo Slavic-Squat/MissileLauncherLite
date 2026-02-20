@@ -80,8 +80,8 @@ namespace IngameScript
                 float r = screenWidthMeters / 2f + screenHorizontalOffsetMeters;
                 float b = -screenHeightMeters / 2f + screenVerticalOffsetMeters;
                 float t = screenHeightMeters / 2f + screenVerticalOffsetMeters;
-                _flightHUDSpriteBuilder = new FlightHUDSpriteBuilder(cameraReference, _screenBounds, l, r, b, t, n, 7500f, _opacity);
-                _targetingHUDSpriteBuilder = new TargetingHUDSpriteBuilder(cameraReference, _screenBounds, l, r, b, t, n, 10f, _opacity);
+                _flightHUDSpriteBuilder = new FlightHUDSpriteBuilder(cameraReference, _screenBounds, l, r, b, t, n, 10f, _opacity);
+                _targetingHUDSpriteBuilder = new TargetingHUDSpriteBuilder(cameraReference, _screenBounds, l, r, b, t, n, 7500f, _opacity);
             }
 
             public void Draw()
