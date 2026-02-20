@@ -30,14 +30,13 @@ namespace IngameScript
             private IMyTextSurface _hudDisplay;
             private List<MySpriteExt> _allSprites = new List<MySpriteExt>();
             private IEnumerator<MySpriteExt> _searchingCoroutine;
-            private float _res;
+            private float _resScale;
             private RectangleF _screenBounds;
             private float _opacity = 0.25f;
             private StringBuilder _sb = new StringBuilder();
 
             public HUD(UICoordinator uiCoordinator, float opacity = 0.25f)
             {
-                _screenBounds = new RectangleF(0, 0, _res, _res);
                 _uiCoordinator = uiCoordinator;
                 _opacity = opacity;
                 Init();
@@ -56,11 +55,14 @@ namespace IngameScript
                 _hudDisplay.Script = "";
                 _hudDisplay.ScriptBackgroundColor = Color.Black;
 
+                Vector2 surfaceSize = _hudDisplay.SurfaceSize;
+                Vector2 textureSize = _hudDisplay.TextureSize;
+                float res = Math.Min(surfaceSize.X, surfaceSize.Y);
+                _resScale = res / 1024f;
+                _screenBounds = new RectangleF(0, 0, surfaceSize.X, surfaceSize.Y);
+
                 IMyTerminalBlock cameraReference = SystemCoordinator.ReferenceController;
 
-                float res = Config.Get("HUD Config", "ScreenResolution").ToSingle(1024f);
-                Config.Set("HUD Config", "ScreenResolution", res.ToString());
-                _res = res;
                 float screenWidthMeters = Config.Get("HUD Config", "ScreenWidthMeters").ToSingle(2.3f);
                 Config.Set("HUD Config", "ScreenWidthMeters", screenWidthMeters.ToString());
                 float screenHeightMeters = Config.Get("HUD Config", "ScreenHeightMeters").ToSingle(2.3f);
@@ -78,8 +80,8 @@ namespace IngameScript
                 float r = screenWidthMeters / 2f + screenHorizontalOffsetMeters;
                 float b = -screenHeightMeters / 2f + screenVerticalOffsetMeters;
                 float t = screenHeightMeters / 2f + screenVerticalOffsetMeters;
-                _flightHUDSpriteBuilder = new FlightHUDSpriteBuilder(cameraReference, res, l, r, b, t, n, 7500f, _opacity);
-                _targetingHUDSpriteBuilder = new TargetingHUDSpriteBuilder(cameraReference, res, l, r, b, t, n, 10f, _opacity);
+                _flightHUDSpriteBuilder = new FlightHUDSpriteBuilder(cameraReference, _screenBounds, l, r, b, t, n, 7500f, _opacity);
+                _targetingHUDSpriteBuilder = new TargetingHUDSpriteBuilder(cameraReference, _screenBounds, l, r, b, t, n, 10f, _opacity);
             }
 
             public void Draw()
@@ -114,19 +116,20 @@ namespace IngameScript
                     _allSprites.Add(_searchingCoroutine.Current);
                 }
 
-                int bayIndex = 0;
+                _sb.Clear();
+                int count = 0;
                 foreach (var missileBay in missileBays.Values)
                 {
-                    float posX = 10f;
-                    float posY = _res - 60f - bayIndex * 50f;
-                    bayIndex++;
-
-                    _sb.Clear();
                     missileBay.AppendOverviewShort(_sb);
-
-                    var sprite = SpriteHelper.CreateText(new Vector2(posX, posY), _sb, new Color(Color.White, _opacity), maxHeight: 40f, fontID: "Monospace");
-                    _allSprites.Add(new MySpriteExt(sprite, 0.00001f));
+                    if (++count < missileBays.Count)
+                    {
+                        _sb.AppendLine("\n");
+                    }
                 }
+                Vector2 textSize = SpriteHelper.MeasureStringInPixels(_sb, "Monospace", 1f * _resScale);
+                Vector2 textPos = new Vector2(_screenBounds.X + 10f * _resScale, _screenBounds.Bottom - textSize.Y - 10f * _resScale);
+                var textSprite = SpriteHelper.CreateText(textPos, _sb, new Color(Color.White, _opacity), scale: 1f * _resScale, fontID: "Monospace");
+                _allSprites.Add(new MySpriteExt(textSprite, 0.00001f));
 
                 var frame = _hudDisplay.DrawFrame();
                 foreach (var sprite in _allSprites)
@@ -139,16 +142,15 @@ namespace IngameScript
             private IEnumerator<MySpriteExt> SearchingCoroutine()
             {
                 int yieldCounter = 0;
-                Vector2 center = new Vector2(_res / 2f, _res / 2f);
-                float maxDistance = (float)Math.Sqrt(64 * 64 + 64 * 64) / 2f;
+                float maxDistance = (float)Math.Sqrt(64 * 64 + 64 * 64) / 2f * _resScale;
 
                 MySprite temp = new MySprite()
                 {
                     Type = SpriteType.TEXTURE,
                     Data = "Selector_0",
-                    Position = new Vector2(_res / 2f, _res / 2f),
+                    Position = _screenBounds.Center,
                     Color = new Color(Color.Orange, _opacity),
-                    Size = new Vector2(128f, 128f),
+                    Size = new Vector2(128f, 128f) * _resScale,
                     Alignment = TextAlignment.CENTER
                 };
 
@@ -159,8 +161,8 @@ namespace IngameScript
                     EntityInfoExt entity = default(EntityInfoExt);
                     foreach (var sprite in entitySprites.Values)
                     {
-                        float distance = Vector2.Distance(sprite.Pos, center);
-                        if (distance < minDistance)
+                        float distance = Vector2.Distance(sprite.Pos, _screenBounds.Center);
+                        if (distance < minDistance && sprite.Entity.IsValid && sprite.Entity.Relation != EntityRelation.Me)
                         {
                             minDistance = distance;
                             entity = sprite.Entity;

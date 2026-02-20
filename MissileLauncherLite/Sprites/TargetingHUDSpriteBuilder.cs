@@ -38,10 +38,10 @@ namespace IngameScript
             private float _opacity = 0.25f;
             private MatrixD _projectionMatrix;
 
-            public TargetingHUDSpriteBuilder(IMyTerminalBlock cameraReference, float res, float l, float r, float b, float t, float n, float f, float opacity = 0.25f)
+            public TargetingHUDSpriteBuilder(IMyTerminalBlock cameraReference, RectangleF screenBounds, float l, float r, float b, float t, float n, float f, float opacity = 0.25f)
             {
-                _resScale = res / 1024f;
-                _screenBounds = new RectangleF(0, 0, res, res);
+                _resScale = Math.Max(_screenBounds.Width, _screenBounds.Height) / 1024f;
+                _screenBounds = screenBounds;
                 _cameraReference = cameraReference;
                 _l = l;
                 _r = r;

@@ -59,11 +59,11 @@ namespace IngameScript
             private float _resScale = 1f;
             private float _scale = 1f;
 
-            public TargetingSpriteBuilder(float res, float scale)
+            public TargetingSpriteBuilder(RectangleF screenBounds, float scale)
             {
-                _resScale = res / 1024f;
+                _resScale = Math.Max(screenBounds.Width, screenBounds.Height) / 1024f;
                 _scale = scale;
-                _screenBounds = new RectangleF(0, 0, res, res);
+                _screenBounds = screenBounds;
                 _projectionMatrix = MatrixD.CreatePerspectiveFieldOfView(MathHelper.ToRadians(_FOV), _AR, _n * _scopeScale, _f * _scopeScale);
 
                 BuildStaticSprites();

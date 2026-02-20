@@ -209,12 +209,16 @@ namespace IngameScript
                 sb.Append("  STATUS: ").AppendLine(MiscEnumHelper.GetBayStatusStr(Status));
                 sb.Append("  MISL TYPE: ").AppendLine(MissileEnumHelper.GetMissileTypeStr(MissileType));
                 sb.Append("  MISL GUIDANCE: ").AppendLine(MissileEnumHelper.GetMissileGuidanceStr(MissileGuidanceType));
-                sb.Append("  MISL PAYLOAD: ").AppendLine(MissileEnumHelper.GetMissilePayloadStr(MissilePayload));
+                sb.Append("  MISL PAYLOAD: ").Append(MissileEnumHelper.GetMissilePayloadStr(MissilePayload));
             }
 
             public void AppendOverviewShort(StringBuilder sb)
             {
-                sb.Append("[BAY ").Append(ID).Append("]: ").Append(MiscEnumHelper.GetBayStatusStrShort(Status));
+                if (Status == BayStatus.Active)
+                {
+                    sb.Append("-");
+                }
+                sb.Append("[").Append(ID).Append("]: ").Append(MiscEnumHelper.GetBayStatusStrShort(Status));
             }
         }
     }

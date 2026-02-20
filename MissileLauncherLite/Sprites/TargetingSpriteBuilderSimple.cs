@@ -41,10 +41,10 @@ namespace IngameScript
             private List<MySpriteExt> _finalSprites = new List<MySpriteExt>();
             private Dictionary<long, MyEntitySprite> _entitySprites = new Dictionary<long, MyEntitySprite>();
 
-            public TargetingSpriteBuilderSimple(float res)
+            public TargetingSpriteBuilderSimple(RectangleF screenBounds)
             {
-                _resScale = res / 1024f;
-                _screenBounds = new RectangleF(0, 0, res, res);
+                _resScale = Math.Max(screenBounds.Width, screenBounds.Height) / 1024f;
+                _screenBounds = screenBounds;
                 BuildStaticSprites();
             }
 

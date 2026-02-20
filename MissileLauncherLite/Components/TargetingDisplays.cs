@@ -33,8 +33,9 @@ namespace IngameScript
             public TargetingDisplays(UICoordinator uiCoordinator)
             {
                 _uiCoordinator = uiCoordinator;
-                _spriteBuilderSimple = new TargetingSpriteBuilderSimple(1024f);
-                _spriteBuilderAdvanced = new TargetingSpriteBuilder(1024f, 1.5f);
+                RectangleF screenBounds = new RectangleF(0, 0, 1024, 1024);
+                _spriteBuilderSimple = new TargetingSpriteBuilderSimple(screenBounds);
+                _spriteBuilderAdvanced = new TargetingSpriteBuilder(screenBounds, 1.5f);
                 _entities = _uiCoordinator.AllEntities;
 
                 Init();
