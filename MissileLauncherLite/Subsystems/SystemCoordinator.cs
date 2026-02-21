@@ -87,6 +87,7 @@ namespace IngameScript
                 CommandHandler0.RegisterCommand("DEACTIVATE_ALL", (args) => MissileCoordinator.DeactivateAll());
                 CommandHandler0.RegisterCommand("LAUNCH", (args) => { if (TargetCoordinator.HasLockedTarget) MissileCoordinator.LaunchMissile(TargetCoordinator.LockedTargetID); });
                 CommandHandler0.RegisterCommand("LAUNCH_ALL", (args) => { if (TargetCoordinator.HasLockedTarget) MissileCoordinator.LaunchMissiles(TargetCoordinator.LockedTargetID); });
+                CommandHandler0.RegisterCommand("ABORT", (args) => MissileCoordinator.AbortAll());
             }
 
             public void Run(double time)

@@ -295,6 +295,14 @@ namespace IngameScript
                 }
             }
 
+            public void AbortAll()
+            {
+                foreach (long address in _addressTargetIDMap.Keys)
+                {
+                    AbortMissile(address);
+                }
+            }
+
             public void AppendOverview(StringBuilder sb)
             {
                 sb.AppendLine("[MISL COORDINATOR]");
