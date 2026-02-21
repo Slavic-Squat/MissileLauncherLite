@@ -34,6 +34,7 @@ namespace IngameScript
             public IReadOnlyDictionary<long, EntityInfoExt> AllEntities => _allEntities;
             public MissileCoordinator MissileCoordinator => _systemCoordinator.MissileCoordinator;
             public TargetCoordinator TargetCoordinator => _systemCoordinator.TargetCoordinator;
+            public FlightControl FlightControl => _systemCoordinator.FlightControl;
             public IReadOnlyDictionary<string, MissileBay> MissileBays => _systemCoordinator.MissileCoordinator.MissileBays;
             public IReadOnlyDictionary<string, TargetingLaser> TargetingLasers => _systemCoordinator.TargetCoordinator.TargetingLasers;
 

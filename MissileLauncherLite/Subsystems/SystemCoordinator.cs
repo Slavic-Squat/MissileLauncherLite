@@ -58,6 +58,7 @@ namespace IngameScript
             public TargetCoordinator TargetCoordinator { get; private set; }
             public MissileCoordinator MissileCoordinator { get; private set; }
             public UICoordinator UICoordinator { get; private set; }
+            public FlightControl FlightControl { get; private set; }
 
             public SystemCoordinator()
             {
@@ -74,6 +75,7 @@ namespace IngameScript
 
                 TargetCoordinator = new TargetCoordinator();
                 MissileCoordinator = new MissileCoordinator(TargetCoordinator.Targets);
+                FlightControl = new FlightControl();
                 UICoordinator = new UICoordinator(this);
 
                 CommandHandler0.RegisterCommand("START_SEARCH", (args) => TargetCoordinator.StartSearch());

@@ -109,7 +109,7 @@ namespace IngameScript
                 {
                     Type = SpriteType.TEXTURE,
                     Data = "SquareSimple",
-                    Position = leftTextPos + new Vector2(leftTextSize.X / 2f, leftTextSize.Y / 2f),
+                    Position = leftTextPos + leftTextSize / 2f,
                     Size = leftTextSize + new Vector2(20f, 20f) * _resScale,
                     Color = Color.Black,
                     Alignment = TextAlignment.CENTER

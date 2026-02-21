@@ -126,10 +126,35 @@ namespace IngameScript
                         _sb.AppendLine("\n");
                     }
                 }
-                Vector2 textSize = SpriteHelper.MeasureStringInPixels(_sb, "Monospace", 1f * _resScale);
-                Vector2 textPos = new Vector2(_screenBounds.X + 10f * _resScale, _screenBounds.Bottom - textSize.Y - 10f * _resScale);
-                var textSprite = SpriteHelper.CreateText(textPos, _sb, new Color(Color.White, _opacity), scale: 1f * _resScale, fontID: "Monospace");
-                _allSprites.Add(new MySpriteExt(textSprite, 0.00001f));
+                Vector2 bayTextSize = SpriteHelper.MeasureStringInPixels(_sb, "Monospace", 1f * _resScale);
+                Vector2 bayTextPos = new Vector2(_screenBounds.X + 10f * _resScale, _screenBounds.Bottom - bayTextSize.Y - 10f * _resScale);
+                var bayTextSprite = SpriteHelper.CreateText(bayTextPos, _sb, new Color(Color.White, _opacity), scale: 1f * _resScale, fontID: "Monospace");
+                _allSprites.Add(new MySpriteExt(bayTextSprite, 0.01f));
+
+                MySprite textBackground = new MySprite()
+                {
+                    Type = SpriteType.TEXTURE,
+                    Data = "SquareSimple",
+                    Position = bayTextPos + bayTextSize / 2f,
+                    Size = bayTextSize + new Vector2(20f, 20f) * _resScale,
+                    Color = Color.Black,
+                    Alignment = TextAlignment.CENTER
+                };
+
+                _allSprites.Add(new MySpriteExt(textBackground, 0.02f));
+
+                Vector2 flightControlTextPos = _screenBounds.Position + new Vector2(10f, 100f) * _resScale;
+                Vector2 flightControlTextSize = SpriteHelper.MeasureStringInPixels(_sb, "Monospace", 1.2f * _resScale);
+
+                _sb.Clear();
+                _sb.Append(MiscEnumHelper.GetFlightControlModeStr(_uiCoordinator.FlightControl.FlightControlMode));
+                var flightControlTextSprite = SpriteHelper.CreateText(flightControlTextPos, _sb, new Color(Color.White, _opacity), scale: 1.2f * _resScale, fontID: "Monospace");
+                _allSprites.Add(new MySpriteExt(flightControlTextSprite, 0.01f));
+                
+                textBackground.Position = flightControlTextPos + flightControlTextSize / 2f;
+                textBackground.Size = flightControlTextSize + new Vector2(20f, 20f) * _resScale;
+
+                _allSprites.Add(new MySpriteExt(textBackground, 0.02f));
 
                 var frame = _hudDisplay.DrawFrame();
                 foreach (var sprite in _allSprites)
@@ -174,13 +199,13 @@ namespace IngameScript
                         _uiCoordinator.TargetCoordinator.LockTarget(entity.EntityID);
                         temp.Color = new Color(Color.GreenYellow, _opacity);
                         yieldCounter++;
-                        yield return new MySpriteExt(temp, 0.00001f);
+                        yield return new MySpriteExt(temp, 0.01f);
                     }
                     else if (yieldCounter % 24 < 12)
                     {
                         temp.Color = new Color(Color.Orange, _opacity);
                         yieldCounter++;
-                        yield return new MySpriteExt(temp, 0.00001f);
+                        yield return new MySpriteExt(temp, 0.01f);
                     }
                     else
                     {
