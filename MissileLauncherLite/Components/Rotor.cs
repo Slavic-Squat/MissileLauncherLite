@@ -84,7 +84,7 @@ namespace IngameScript
             public Rotor(string blockName)
             {
                 blockName = blockName.ToUpper();
-                RotorBlock = AllGridBlocks.Where(b => b is IMyMotorStator && b.CustomName.ToUpper().Contains(blockName)).FirstOrDefault() as IMyMotorStator;
+                RotorBlock = AllGridBlocks.FirstOrDefault(b => b is IMyMotorStator && b.CustomName.ToUpper().Contains(blockName)) as IMyMotorStator;
                 if (RotorBlock == null)
                 {
                     throw new ArgumentException($"Rotor block '{blockName}' not found!");

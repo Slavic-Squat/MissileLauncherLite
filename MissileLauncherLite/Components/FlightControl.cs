@@ -53,6 +53,8 @@ namespace IngameScript
                 _shipMass = Config.Get("Config", "Mass").ToSingle(1000000);
                 Config.Set("Config", "Mass", _shipMass);
 
+                MePb.CustomData = Config.ToString();
+
                 MatrixD referenceOrientation = SystemCoordinator.ReferenceWorldMatrix.GetOrientation();
 
                 _maxThrust[Direction.Backward] = 0;
