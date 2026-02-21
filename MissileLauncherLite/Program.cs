@@ -34,8 +34,8 @@ namespace IngameScript
         public static int DebugCounter { get; set; } = 0;
 
         private static List<IMyTerminalBlock> _allGridBlocks = new List<IMyTerminalBlock>();
-        private const string _programName = "MissileLauncher";
-        private const string _programVersion = "1.26";
+        private const string _programName = "MissileLauncherLite";
+        private const string _programVersion = "1.0";
         private static string _blockTag;
 
         private SystemCoordinator _systemCoordinator;

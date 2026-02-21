@@ -166,7 +166,7 @@ namespace IngameScript
                     Data = "Radial_Grad_0",
                     Position = _screenBounds.Center,
                     Size = _screenBounds.Size * _scale,
-                    Color = new Color(Color.DeepSkyBlue, 0.25f),
+                    Color = new Color(64, 64, 64, 255),
                     Alignment = TextAlignment.CENTER,
                     RotationOrScale = 0f
                 };

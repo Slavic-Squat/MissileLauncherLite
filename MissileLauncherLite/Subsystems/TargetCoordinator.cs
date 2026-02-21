@@ -36,6 +36,7 @@ namespace IngameScript
             public IReadOnlyDictionary<long, EntityInfoExt> Targets => _targets;
             public long LockedTargetID => _lockedTargetID;
             public bool Searching => _searching;
+            public bool HasLockedTarget => _lockedTargetID != -1;
             public IReadOnlyDictionary<string, TargetingLaser> TargetingLasers => _targetingLasers;
 
             public TargetCoordinator()

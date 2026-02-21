@@ -70,7 +70,7 @@ namespace IngameScript
                 ReferenceController = AllGridBlocks.FirstOrDefault(b => b is IMyShipController && b.CustomName.ToUpper().Contains("MAIN CONTROLLER")) as IMyShipController;
                 if (ReferenceController == null)
                 {
-                    throw new Exception($"main controller not found!");
+                    throw new Exception("Main controller not found!");
                 }
 
                 TargetCoordinator = new TargetCoordinator();
@@ -81,6 +81,12 @@ namespace IngameScript
                 CommandHandler0.RegisterCommand("START_SEARCH", (args) => TargetCoordinator.StartSearch());
                 CommandHandler0.RegisterCommand("STOP_SEARCH", (args) => TargetCoordinator.StopSearch());
                 CommandHandler0.RegisterCommand("UNLOCK_TARGET", (args) => TargetCoordinator.UnlockTarget());
+                CommandHandler0.RegisterCommand("CYCLE_FLIGHT_CTRL", (args) => FlightControl.CycleFlightControlMode());
+                CommandHandler0.RegisterCommand("TOGGLE_BAY", (args) => { if (args.Length > 0) MissileCoordinator.ToggleBay(args[0]); });
+                CommandHandler0.RegisterCommand("ACTIVATE_ALL", (args) => MissileCoordinator.ActivateAll());
+                CommandHandler0.RegisterCommand("DEACTIVATE_ALL", (args) => MissileCoordinator.DeactivateAll());
+                CommandHandler0.RegisterCommand("LAUNCH", (args) => { if (TargetCoordinator.HasLockedTarget) MissileCoordinator.LaunchMissile(TargetCoordinator.LockedTargetID); });
+                CommandHandler0.RegisterCommand("LAUNCH_ALL", (args) => { if (TargetCoordinator.HasLockedTarget) MissileCoordinator.LaunchMissiles(TargetCoordinator.LockedTargetID); });
             }
 
             public void Run(double time)

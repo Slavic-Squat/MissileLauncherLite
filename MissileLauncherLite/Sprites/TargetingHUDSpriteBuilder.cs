@@ -78,6 +78,11 @@ namespace IngameScript
                     Vector3D entityPosView = Vector3D.Transform(entityPosWorld, viewMatrix);
                     Vector4D entityPosClip = Vector4D.Transform(new Vector4D(entityPosView, 1), _projectionMatrix);
                     Vector3 entityPosNDC = new Vector3(entityPosClip.X / entityPosClip.W, entityPosClip.Y / entityPosClip.W, entityPosClip.Z / entityPosClip.W);
+
+                    if (Math.Abs(entityPosNDC.X) > 1.1f || Math.Abs(entityPosNDC.Y) > 1.1f || entityPosNDC.Z < 0 || entityPosNDC.Z > 1 || entityPosClip.W <= 0)
+                    {
+                        continue;
+                    }
                     Vector2 entityPosPixel = new Vector2((1 + entityPosNDC.X) * _screenBounds.Width / 2f, (1 - entityPosNDC.Y) * _screenBounds.Height / 2f);
                     float entityDepthScale = (float)(0.5f * _f / -entityPosView.Z);
                     entityDepthScale = MathHelper.Clamp(entityDepthScale, 0.75f, 1.5f);
@@ -191,7 +196,7 @@ namespace IngameScript
                         _sb.AppendFormat("SPD: {0:F1} m/s", closingSpeed);
 
                         Vector2 textPos = entityPosPixel + spriteSize * entityDepthScale * 0.75f + new Vector2(20f * _resScale, 0);
-                        tempSprite = SpriteHelper.CreateText(textPos, _sb, new Color(Color.White, _opacity), _surface, scale: 1f * _resScale * entityDepthScale);
+                        tempSprite = SpriteHelper.CreateText(textPos, _sb, new Color(Color.White, _opacity), _surface, scale: 0.8f * _resScale * entityDepthScale, fontID: "Monospace");
                         _sprites.Add(new MySpriteExt(tempSprite, entityPosNDC.Z - 0.001f));
                     }
 

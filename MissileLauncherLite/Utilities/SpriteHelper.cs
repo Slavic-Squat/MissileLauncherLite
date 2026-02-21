@@ -26,11 +26,21 @@ namespace IngameScript
         {
             public static MySprite CreateText(Vector2 pos, StringBuilder sb, Color color, IMyTextSurface surface, string text = null, float scale = -1, float maxWidth = float.PositiveInfinity, float maxHeight = float.PositiveInfinity, string fontID = "White", TextAlignment alignment = TextAlignment.LEFT, bool vertCentered = false)
             {
-                Vector2 textSize;
+
                 float fillScale;
-                if (scale > 0)
+                if (maxWidth == float.PositiveInfinity && maxHeight == float.PositiveInfinity)
                 {
-                    textSize = MeasureStringInPixels(surface, sb, fontID, scale);
+                    fillScale = scale > 0 ? scale : 1;
+
+                    if (vertCentered)
+                    {
+                        Vector2 textSize = MeasureStringInPixels(surface, sb, fontID, fillScale);
+                        pos.Y -= (textSize.Y * fillScale) / 2f;
+                    }
+                }
+                else if (scale > 0)
+                {
+                    Vector2 textSize = MeasureStringInPixels(surface, sb, fontID, scale);
                     if (textSize.X <= maxWidth && textSize.Y <= maxHeight)
                     {
                         fillScale = scale;
@@ -39,16 +49,21 @@ namespace IngameScript
                     {
                         fillScale = Math.Min(maxWidth / textSize.X, maxHeight / textSize.Y);
                     }
+
+                    if (vertCentered)
+                    {
+                        pos.Y -= (textSize.Y * fillScale) / 2f;
+                    }
                 }
                 else
                 {
-                    textSize = MeasureStringInPixels(surface, sb, fontID, 1);
+                    Vector2 textSize = MeasureStringInPixels(surface, sb, fontID, 1);
                     fillScale = Math.Min(maxWidth / textSize.X, maxHeight / textSize.Y);
-                }
 
-                if (vertCentered)
-                {
-                    pos.Y -= (textSize.Y * fillScale) / 2f;
+                    if (vertCentered)
+                    {
+                        pos.Y -= (textSize.Y * fillScale) / 2f;
+                    }
                 }
 
                 return new MySprite()
