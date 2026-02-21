@@ -32,6 +32,7 @@ namespace IngameScript
             private List<MySpriteExt> _finalSprites = new List<MySpriteExt>();
             private Dictionary<long, MyEntitySprite> _entitySprites = new Dictionary<long, MyEntitySprite>();
             private IMyTerminalBlock _cameraReference;
+            private IMyTextSurface _surface;
             private RectangleF _screenBounds;
             private float _resScale = 1f;
             private float _l, _r, _b, _t, _n, _f;
@@ -39,11 +40,12 @@ namespace IngameScript
             private MatrixD _projectionMatrix;
             private StringBuilder _sb = new StringBuilder();
 
-            public TargetingHUDSpriteBuilder(IMyTerminalBlock cameraReference, RectangleF screenBounds, float l, float r, float b, float t, float n, float f, float opacity = 0.25f)
+            public TargetingHUDSpriteBuilder(IMyTerminalBlock cameraReference, IMyTextSurface surface, RectangleF screenBounds, float l, float r, float b, float t, float n, float f, float opacity = 0.25f)
             {
                 _resScale = Math.Max(screenBounds.Width, screenBounds.Height) / 1024f;
                 _screenBounds = screenBounds;
                 _cameraReference = cameraReference;
+                _surface = surface;
                 _l = l;
                 _r = r;
                 _b = b;
@@ -60,7 +62,7 @@ namespace IngameScript
                 _staticSprites.Clear();
             }
 
-            public void BuildSprites(IReadOnlyDictionary<long, EntityInfoExt> entities, long targetedID = -1)
+            public void BuildSprites(IReadOnlyDictionary<long, EntityInfoExt> entities, long targetedID = -1, bool sort = true)
             {
                 _sprites.Clear();
                 _finalSprites.Clear();
@@ -168,8 +170,6 @@ namespace IngameScript
 
                     if (entity.EntityID == targetedID)
                     {
-                        double lateralSpeed = entityRelVelView.Length();
-
                         tempSprite = new MySprite()
                         {
                             Type = SpriteType.TEXTURE,
@@ -191,13 +191,13 @@ namespace IngameScript
                         _sb.AppendFormat("SPD: {0:F1} m/s", closingSpeed);
 
                         Vector2 textPos = entityPosPixel + spriteSize * entityDepthScale * 0.75f + new Vector2(20f * _resScale, 0);
-                        tempSprite = SpriteHelper.CreateText(textPos, _sb, new Color(Color.White, _opacity), scale: 1f * _resScale * entityDepthScale);
+                        tempSprite = SpriteHelper.CreateText(textPos, _sb, new Color(Color.White, _opacity), _surface, scale: 1f * _resScale * entityDepthScale);
                         _sprites.Add(new MySpriteExt(tempSprite, entityPosNDC.Z - 0.001f));
                     }
 
                     _finalSprites.AddRange(_staticSprites);
                     _finalSprites.AddRange(_sprites);
-                    _finalSprites.SortNoAlloc((a, b) => b.Depth.CompareTo(a.Depth));
+                    if (sort) _finalSprites.SortNoAlloc((a, b) => b.Depth.CompareTo(a.Depth));
                 }
             }
         }

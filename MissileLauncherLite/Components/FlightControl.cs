@@ -103,7 +103,12 @@ namespace IngameScript
                     case FlightControlMode.Free:
                         break;
                     case FlightControlMode.GravComp:
-                        _shipMass = SystemCoordinator.ReferenceController.CalculateShipMass().TotalMass;
+                        if (SystemCoordinator.ReferenceController.DampenersOverride)
+                        {
+                            SetFlightControlMode(FlightControlMode.Free);
+                            return;
+                        }
+                        _shipMass = SystemCoordinator.ReferenceMass;
                         Vector3D accelVector = Vector3D.Zero;
                         if (userInput.WPress)
                         {

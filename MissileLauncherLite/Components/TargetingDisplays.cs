@@ -33,9 +33,6 @@ namespace IngameScript
             public TargetingDisplays(UICoordinator uiCoordinator)
             {
                 _uiCoordinator = uiCoordinator;
-                RectangleF screenBounds = new RectangleF(0, 0, 1024, 1024);
-                _spriteBuilderSimple = new TargetingSpriteBuilderSimple(screenBounds);
-                _spriteBuilderAdvanced = new TargetingSpriteBuilder(screenBounds, 1.5f);
                 _entities = _uiCoordinator.AllEntities;
 
                 Init();
@@ -58,20 +55,26 @@ namespace IngameScript
 
                     AddDisplay(displayBlock as IMyTextSurface, isAdvanced);
                 }
+
+                RectangleF screenBounds = new RectangleF(0, 0, 1024, 1024);
+
+                if (_simpleDisplays.Count != 0)
+                {
+                    _spriteBuilderSimple = new TargetingSpriteBuilderSimple(_simpleDisplays[0], screenBounds);
+                }
+
+                if (_advancedDisplays.Count != 0)
+                {
+                    _spriteBuilderAdvanced = new TargetingSpriteBuilder(_advancedDisplays[0], screenBounds, 1.5f);
+                }
             }
 
             public void Draw()
             {
                 long lockedTargetID = _uiCoordinator.TargetCoordinator.LockedTargetID;
 
-                if (_simpleDisplays.Count != 0)
-                {
-                    _spriteBuilderSimple.BuildSprites(_entities, lockedTargetID);
-                }
-                if (_advancedDisplays.Count != 0)
-                {
-                    _spriteBuilderAdvanced.BuildSprites(_entities, lockedTargetID);
-                }
+                _spriteBuilderSimple?.BuildSprites(_entities, lockedTargetID);
+                _spriteBuilderAdvanced?.BuildSprites(_entities, lockedTargetID);
 
                 foreach (var display in _simpleDisplays)
                 {

@@ -24,17 +24,6 @@ namespace IngameScript
     {
         public class TargetingSpriteBuilder
         {
-            public float ScopeScale
-            {
-                get { return _scopeScale; }
-                set
-                {
-                    if (value == _scopeScale) return;
-                    _scopeScale = value;
-                    _projectionMatrix = MatrixD.CreatePerspectiveFieldOfView(MathHelper.ToRadians(_FOV), _AR, _n * _scopeScale, _f * _scopeScale);
-                    BuildStaticSprites();
-                }
-            }
             public IReadOnlyList<MySpriteExt> FinalSprites => _finalSprites;
             public IReadOnlyDictionary<long, MyEntitySprite> EntitySprites => _entitySprites;
 
@@ -54,15 +43,20 @@ namespace IngameScript
             private List<MySpriteExt> _finalSprites = new List<MySpriteExt>();
             private Dictionary<long, MyEntitySprite> _entitySprites = new Dictionary<long, MyEntitySprite>();
 
+            private string _rangeStr = "6 km";
+            private StringBuilder _sb = new StringBuilder();
+
             private MatrixD _projectionMatrix = MatrixD.Identity;
             private RectangleF _screenBounds;
             private float _resScale = 1f;
             private float _scale = 1f;
+            private IMyTextSurface _surface;
 
-            public TargetingSpriteBuilder(RectangleF screenBounds, float scale)
+            public TargetingSpriteBuilder(IMyTextSurface surface, RectangleF screenBounds, float scale)
             {
                 _resScale = Math.Max(screenBounds.Width, screenBounds.Height) / 1024f;
                 _scale = scale;
+                _surface = surface;
                 _screenBounds = screenBounds;
                 _projectionMatrix = MatrixD.CreatePerspectiveFieldOfView(MathHelper.ToRadians(_FOV), _AR, _n * _scopeScale, _f * _scopeScale);
 
@@ -242,6 +236,19 @@ namespace IngameScript
 
                 PlaneD gridPlaneWorld = new PlaneD(cameraTargetWorld.Translation, cameraTargetWorld.Up);
 
+                double farthestDistance = 0;
+                foreach (var entity in entities.Values)
+                {
+                    double distance = Vector3D.Distance(cameraTargetWorld.Translation, entity.Position);
+                    if (distance > farthestDistance) farthestDistance = distance;
+                }
+
+                SetScopeScale(farthestDistance > 3000f ? 0.5f : 0.25f);
+
+                Vector2 rangeTextPos = _screenBounds.Position + new Vector2(10f, 10f) * _resScale;
+                MySprite rangeTextSprite = SpriteHelper.CreateText(rangeTextPos, _sb.Clear().Append(_rangeStr), Color.White, _surface, text: _rangeStr, fontID: "Monospace", scale: 1.5f * _resScale);
+                _spritesPostPlane.Add(new MySpriteExt(rangeTextSprite, 0.01f));
+
                 foreach (var entity in entities.Values)
                 {
                     double distance = Vector3D.Distance(cameraTargetWorld.Translation, entity.Position);
@@ -402,6 +409,15 @@ namespace IngameScript
                 _finalSprites.AddRange(_spritesPrePlane);
                 _finalSprites.AddRange(_planeSprites);
                 _finalSprites.AddRange(_spritesPostPlane);
+            }
+
+            private void SetScopeScale(float scale)
+            {
+                if (scale == _scopeScale) return;
+                _scopeScale = scale;
+                _rangeStr = scale == 0.5f ? "6 km" : "3 km";
+                _projectionMatrix = MatrixD.CreatePerspectiveFieldOfView(MathHelper.ToRadians(_FOV), _AR, _n * _scopeScale, _f * _scopeScale);
+                BuildStaticSprites();
             }
         }
     }

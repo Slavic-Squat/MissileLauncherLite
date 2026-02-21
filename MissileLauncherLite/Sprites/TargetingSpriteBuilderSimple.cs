@@ -33,16 +33,21 @@ namespace IngameScript
             public IReadOnlyDictionary<long, MyEntitySprite> EntitySprites => _entitySprites;
 
             private float _range = 6000f;
+            private string _rangeStr = "6 km";
             private RectangleF _screenBounds;
             private float _resScale = 1f;
+
+            private StringBuilder _sb = new StringBuilder();
+            private IMyTextSurface _surface;
 
             private List<MySpriteExt> _sprites = new List<MySpriteExt>();
             private List<MySpriteExt> _staticSprites = new List<MySpriteExt>();
             private List<MySpriteExt> _finalSprites = new List<MySpriteExt>();
             private Dictionary<long, MyEntitySprite> _entitySprites = new Dictionary<long, MyEntitySprite>();
 
-            public TargetingSpriteBuilderSimple(RectangleF screenBounds)
+            public TargetingSpriteBuilderSimple(IMyTextSurface surface, RectangleF screenBounds)
             {
+                _surface = surface;
                 _resScale = Math.Max(screenBounds.Width, screenBounds.Height) / 1024f;
                 _screenBounds = screenBounds;
                 BuildStaticSprites();
@@ -130,6 +135,24 @@ namespace IngameScript
                 _sprites.Clear();
 
                 MatrixD referenceWorldMatrix = SystemCoordinator.ReferenceWorldMatrix;
+
+                double farthestDistance = 0;
+                foreach (var entity in entities.Values)
+                {
+                    double distance = Vector3D.Distance(referenceWorldMatrix.Translation, entity.Position);
+                    if (distance > farthestDistance)
+                    {
+                        farthestDistance = distance;
+                    }
+                }
+
+                _range = farthestDistance > 3000 ? 6000f : 3000f;
+                _rangeStr = _range == 6000f ? "6 km" : "3 km";
+
+                Vector2 rangeTextPos = _screenBounds.Position + new Vector2(10f, 10f) * _resScale;
+                MySprite rangeTextSprite = SpriteHelper.CreateText(rangeTextPos, _sb.Clear().Append(_rangeStr), Color.White, _surface, text: _rangeStr, fontID: "Monospace", scale: 1.5f * _resScale);
+                _sprites.Add(new MySpriteExt(rangeTextSprite, 0.01f));
+
                 float pixelsPerMeter = _screenBounds.Width / (2f * _range);
 
                 foreach (var entity in entities.Values)

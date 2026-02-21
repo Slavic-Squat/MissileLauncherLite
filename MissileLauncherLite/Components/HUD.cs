@@ -80,8 +80,8 @@ namespace IngameScript
                 float r = screenWidthMeters / 2f + screenHorizontalOffsetMeters;
                 float b = -screenHeightMeters / 2f + screenVerticalOffsetMeters;
                 float t = screenHeightMeters / 2f + screenVerticalOffsetMeters;
-                _flightHUDSpriteBuilder = new FlightHUDSpriteBuilder(cameraReference, _screenBounds, l, r, b, t, n, 10f, _opacity);
-                _targetingHUDSpriteBuilder = new TargetingHUDSpriteBuilder(cameraReference, _screenBounds, l, r, b, t, n, 7500f, _opacity);
+                _flightHUDSpriteBuilder = new FlightHUDSpriteBuilder(cameraReference, _hudDisplay, _screenBounds, l, r, b, t, n, 10f, _opacity);
+                _targetingHUDSpriteBuilder = new TargetingHUDSpriteBuilder(cameraReference, _hudDisplay, _screenBounds, l, r, b, t, n, 7500f, _opacity);
             }
 
             public void Draw()
@@ -92,7 +92,7 @@ namespace IngameScript
                 bool searching = _uiCoordinator.TargetCoordinator.Searching;
                 var missileBays = _uiCoordinator.MissileBays;
 
-                _targetingHUDSpriteBuilder.BuildSprites(entities, targetId);
+                _targetingHUDSpriteBuilder.BuildSprites(entities, targetedID: targetId);
                 _allSprites.AddRange(_targetingHUDSpriteBuilder.FinalSprites);
 
                 _flightHUDSpriteBuilder.BuildSprites();
@@ -126,10 +126,9 @@ namespace IngameScript
                         _sb.AppendLine("\n");
                     }
                 }
-                Vector2 bayTextSize = SpriteHelper.MeasureStringInPixels(_sb, "Monospace", 1f * _resScale);
+                Vector2 bayTextSize = SpriteHelper.MeasureStringInPixels(_hudDisplay, _sb, "Monospace", 1f * _resScale);
                 Vector2 bayTextPos = new Vector2(_screenBounds.X + 10f * _resScale, _screenBounds.Bottom - bayTextSize.Y - 10f * _resScale);
-                var bayTextSprite = SpriteHelper.CreateText(bayTextPos, _sb, new Color(Color.White, _opacity), scale: 1f * _resScale, fontID: "Monospace");
-                _allSprites.Add(new MySpriteExt(bayTextSprite, 0.01f));
+                var bayTextSprite = SpriteHelper.CreateText(bayTextPos, _sb, new Color(Color.White, _opacity), _hudDisplay, scale: 1f * _resScale, fontID: "Monospace");
 
                 MySprite textBackground = new MySprite()
                 {
@@ -142,19 +141,19 @@ namespace IngameScript
                 };
 
                 _allSprites.Add(new MySpriteExt(textBackground, 0.02f));
-
-                Vector2 flightControlTextPos = _screenBounds.Position + new Vector2(10f, 100f) * _resScale;
-                Vector2 flightControlTextSize = SpriteHelper.MeasureStringInPixels(_sb, "Monospace", 1.2f * _resScale);
+                _allSprites.Add(new MySpriteExt(bayTextSprite, 0.01f));
 
                 _sb.Clear();
                 _sb.Append(MiscEnumHelper.GetFlightControlModeStr(_uiCoordinator.FlightControl.FlightControlMode));
-                var flightControlTextSprite = SpriteHelper.CreateText(flightControlTextPos, _sb, new Color(Color.White, _opacity), scale: 1.2f * _resScale, fontID: "Monospace");
-                _allSprites.Add(new MySpriteExt(flightControlTextSprite, 0.01f));
+                Vector2 flightControlTextPos = _screenBounds.Position + new Vector2(10f, 150f) * _resScale;
+                Vector2 flightControlTextSize = SpriteHelper.MeasureStringInPixels(_hudDisplay, _sb, "Monospace", 1.2f * _resScale);
+                var flightControlTextSprite = SpriteHelper.CreateText(flightControlTextPos, _sb, new Color(Color.White, _opacity), _hudDisplay, scale: 1.2f * _resScale, fontID: "Monospace");
                 
                 textBackground.Position = flightControlTextPos + flightControlTextSize / 2f;
                 textBackground.Size = flightControlTextSize + new Vector2(20f, 20f) * _resScale;
 
                 _allSprites.Add(new MySpriteExt(textBackground, 0.02f));
+                _allSprites.Add(new MySpriteExt(flightControlTextSprite, 0.01f));
 
                 var frame = _hudDisplay.DrawFrame();
                 foreach (var sprite in _allSprites)

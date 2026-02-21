@@ -24,13 +24,13 @@ namespace IngameScript
     {
         public static class SpriteHelper
         {
-            public static MySprite CreateText(Vector2 pos, StringBuilder sb, Color color, float scale = -1, float maxWidth = float.PositiveInfinity, float maxHeight = float.PositiveInfinity, string fontID = "White", TextAlignment alignment = TextAlignment.LEFT, bool vertCentered = false)
+            public static MySprite CreateText(Vector2 pos, StringBuilder sb, Color color, IMyTextSurface surface, string text = null, float scale = -1, float maxWidth = float.PositiveInfinity, float maxHeight = float.PositiveInfinity, string fontID = "White", TextAlignment alignment = TextAlignment.LEFT, bool vertCentered = false)
             {
                 Vector2 textSize;
                 float fillScale;
                 if (scale > 0)
                 {
-                    textSize = MeasureStringInPixels(sb, fontID, scale);
+                    textSize = MeasureStringInPixels(surface, sb, fontID, scale);
                     if (textSize.X <= maxWidth && textSize.Y <= maxHeight)
                     {
                         fillScale = scale;
@@ -42,7 +42,7 @@ namespace IngameScript
                 }
                 else
                 {
-                    textSize = MeasureStringInPixels(sb, fontID, 1);
+                    textSize = MeasureStringInPixels(surface, sb, fontID, 1);
                     fillScale = Math.Min(maxWidth / textSize.X, maxHeight / textSize.Y);
                 }
 
@@ -54,7 +54,7 @@ namespace IngameScript
                 return new MySprite()
                 {
                     Type = SpriteType.TEXT,
-                    Data = sb.ToString(),
+                    Data = text ?? sb.ToString(),
                     Position = pos,
                     Color = color,
                     RotationOrScale = fillScale,
@@ -63,10 +63,9 @@ namespace IngameScript
                 };
             }
 
-            public static Vector2 MeasureStringInPixels(StringBuilder sb, string font = "White", float scale = 1f)
+            public static Vector2 MeasureStringInPixels(IMyTextSurface surface, StringBuilder sb, string font = "White", float scale = 1f)
             {
-                IMyTextSurface referenceSurface = MePb.GetSurface(0);
-                return referenceSurface.MeasureStringInPixels(sb, font, scale);
+                return surface.MeasureStringInPixels(sb, font, scale);
             }
 
             public static void CreateBoxFilled(List<MySprite> sprites, RectangleF bounds, Color borderColor, Color fillColor, float borderThickness)

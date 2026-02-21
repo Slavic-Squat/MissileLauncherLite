@@ -28,10 +28,13 @@ namespace IngameScript
             private List<MySpriteExt> _staticSprites = new List<MySpriteExt>();
             private List<MySpriteExt> _finalSprites = new List<MySpriteExt>();
             private Dictionary<int, Vector3D> _pitchPos = new Dictionary<int, Vector3D>();
+            private Dictionary<int, string> _pitchStrs = new Dictionary<int, string>();
             private Dictionary<int, Vector3D> _rollPos = new Dictionary<int, Vector3D>();
+            private Dictionary<int, string> _rollStrs = new Dictionary<int, string>();
             private MatrixD _projectionMatrix = MatrixD.Identity;
             private RectangleF _screenBounds;
             private IMyTerminalBlock _cameraReference;
+            private IMyTextSurface _surface;
             private float _resScale = 1f;
             private float _l, _r, _b, _t, _n, _f;
             private float _opacity = 0.25f;
@@ -39,10 +42,11 @@ namespace IngameScript
             private StringBuilder _sbLeft = new StringBuilder();
             private StringBuilder _sbRight = new StringBuilder();
             public IReadOnlyList<MySpriteExt> FinalSprites => _finalSprites;
-            public FlightHUDSpriteBuilder(IMyTerminalBlock cameraReference, RectangleF screenBounds, float l, float r, float b, float t, float n, float f, float opacity = 0.25f)
+            public FlightHUDSpriteBuilder(IMyTerminalBlock cameraReference, IMyTextSurface surface, RectangleF screenBounds, float l, float r, float b, float t, float n, float f, float opacity = 0.25f)
             {
                 _resScale = Math.Max(screenBounds.Width, screenBounds.Height) / 1024f;
                 _cameraReference = cameraReference;
+                _surface = surface;
                 _screenBounds = screenBounds;
 
                 for (int i = 0; i < 19; i++)
@@ -50,6 +54,7 @@ namespace IngameScript
                     int angle = -90 + i * 10;
                     float radians = MathHelper.ToRadians(angle);
                     _pitchPos[angle] = new Vector3(0, Math.Sin(radians), -Math.Cos(radians)) * 1.1f * n;
+                    _pitchStrs[angle] = angle.ToString() + "°";
                 }
 
                 for (int i = 0; i < 36; i++)
@@ -57,6 +62,7 @@ namespace IngameScript
                     int angle = -170 + i * 10;
                     float radians = MathHelper.ToRadians(angle);
                     _rollPos[angle] = new Vector3(Math.Sin(radians), -Math.Cos(radians), 1f);
+                    _rollStrs[angle] = angle.ToString() + "°";
                 }
 
                 _l = l;
@@ -88,7 +94,7 @@ namespace IngameScript
                 _staticSprites.Add(new MySpriteExt(boreSight, 0.05f));
             }
 
-            public void BuildSprites()
+            public void BuildSprites(bool sort = true)
             {
                 _sprites.Clear();
                 _finalSprites.Clear();
@@ -102,8 +108,8 @@ namespace IngameScript
                 _sbLeft.Clear();
                 _sbLeft.AppendFormat("SPD: {0:F0}m/s", speed);
                 Vector2 leftTextPos = _screenBounds.Position + new Vector2(10f, 50f) * _resScale;
-                MySprite leftTextSprite = SpriteHelper.CreateText(leftTextPos, _sbLeft, new Color(Color.White, _opacity), scale: 1.2f * _resScale, fontID: "Monospace");
-                Vector2 leftTextSize = SpriteHelper.MeasureStringInPixels(_sbLeft, "Monospace", 1.2f * _resScale);
+                MySprite leftTextSprite = SpriteHelper.CreateText(leftTextPos, _sbLeft, new Color(Color.White, _opacity), _surface, scale: 1.2f * _resScale, fontID: "Monospace");
+                Vector2 leftTextSize = SpriteHelper.MeasureStringInPixels(_surface, _sbLeft, "Monospace", 1.2f * _resScale);
 
                 MySprite leftTextBackground = new MySprite()
                 {
@@ -115,8 +121,8 @@ namespace IngameScript
                     Alignment = TextAlignment.CENTER
                 };
 
-                _sprites.Add(new MySpriteExt(leftTextSprite, 0.05f));
                 _sprites.Add(new MySpriteExt(leftTextBackground, 0.06f));
+                _sprites.Add(new MySpriteExt(leftTextSprite, 0.05f));
 
                 Vector3D velocityDir;
                 if (speed <= 1)
@@ -222,8 +228,8 @@ namespace IngameScript
                     _sbRight.AppendFormat("ROLL: {0:F0}°", rollDeg);
 
                     Vector2 rightTextPos = _screenBounds.Position + new Vector2(_screenBounds.Width - 256f * _resScale, 50f * _resScale);
-                    MySprite rightTextSprite = SpriteHelper.CreateText(rightTextPos, _sbRight, new Color(Color.White, _opacity), scale: 1.2f * _resScale, fontID: "Monospace", alignment: TextAlignment.LEFT);
-                    Vector2 rightTextSize = SpriteHelper.MeasureStringInPixels(_sbRight, "Monospace", 1.2f * _resScale);
+                    MySprite rightTextSprite = SpriteHelper.CreateText(rightTextPos, _sbRight, new Color(Color.White, _opacity), _surface, scale: 1.2f * _resScale, fontID: "Monospace", alignment: TextAlignment.LEFT);
+                    Vector2 rightTextSize = SpriteHelper.MeasureStringInPixels(_surface, _sbRight, "Monospace", 1.2f * _resScale);
 
                     MySprite rightTextBackground = new MySprite()
                     {
@@ -235,8 +241,8 @@ namespace IngameScript
                         Alignment = TextAlignment.CENTER
                     };
 
-                    _sprites.Add(new MySpriteExt(rightTextSprite, 0.05f));
                     _sprites.Add(new MySpriteExt(rightTextBackground, 0.06f));
+                    _sprites.Add(new MySpriteExt(rightTextSprite, 0.05f));
 
                     MySprite clip = new MySprite()
                     {
@@ -298,15 +304,16 @@ namespace IngameScript
 
                         _sprites.Add(new MySpriteExt(pitchSprite, 0.95f));
 
+                        string pitchStr = _pitchStrs[kvp.Key];
                         _sb.Clear();
-                        _sb.Append(kvp.Key);
+                        _sb.Append(pitchStr);
 
                         Vector2 textLeftPos = pixelPos + new Vector2(-(spriteSize.X / 2f + 60f * _resScale) * (float)Math.Cos(rollRadians), -(spriteSize.X / 2f + 60f * _resScale) * (float)Math.Sin(rollRadians));
                         Vector2 textRightPos = pixelPos + new Vector2((spriteSize.X / 2f + 60f * _resScale) * (float)Math.Cos(rollRadians), (spriteSize.X / 2f + 60f * _resScale) * (float)Math.Sin(rollRadians));
 
-                        MySprite textLeftSprite = SpriteHelper.CreateText(textLeftPos, _sb, new Color(Color.White, _opacity), maxHeight: 40f * _resScale, maxWidth: 80f * _resScale, alignment: TextAlignment.CENTER, vertCentered: true, fontID: "Monospace");
+                        MySprite textLeftSprite = SpriteHelper.CreateText(textLeftPos, _sb, new Color(Color.White, _opacity), _surface, text: pitchStr, scale: 1.1f * _resScale, alignment: TextAlignment.CENTER, vertCentered: true, fontID: "Monospace");
                         _sprites.Add(new MySpriteExt(textLeftSprite, 0.95f));
-                        MySprite textRightSprite = SpriteHelper.CreateText(textRightPos, _sb, new Color(Color.White, _opacity), maxHeight: 40f * _resScale, maxWidth: 80f * _resScale, alignment: TextAlignment.CENTER, vertCentered: true, fontID: "Monospace");
+                        MySprite textRightSprite = SpriteHelper.CreateText(textRightPos, _sb, new Color(Color.White, _opacity), _surface, text: pitchStr, scale: 1.1f * _resScale, alignment: TextAlignment.CENTER, vertCentered: true, fontID: "Monospace");
                         _sprites.Add(new MySpriteExt(textRightSprite, 0.95f));
                     }
 
@@ -329,6 +336,11 @@ namespace IngameScript
 
                         Vector3 posNDC = Vector3D.TransformNormal(kvp.Value, roll);
                         posNDC.Y += 0.2f;
+
+                        if (posNDC.Y > 0.33f)
+                        {
+                            continue;
+                        }
                         Vector2 pixelPos = new Vector2((1 + posNDC.X) * _screenBounds.Width / 2f, (1 - posNDC.Y) * _screenBounds.Height / 2f);
 
                         string spriteName = "SquareSimple";
@@ -340,10 +352,11 @@ namespace IngameScript
                             spriteSize = new Vector2(8f, 80f) * _resScale;
                             spriteColor = new Color(Color.White, _opacity);
 
+                            string rollStr = _rollStrs[kvp.Key];
                             _sb.Clear();
-                            _sb.Append(kvp.Key);
+                            _sb.Append(rollStr);
                             Vector2 textPos = pixelPos + new Vector2((spriteSize.Y / 2f + 40f * _resScale) * (float)Math.Sin(rollRadians - MathHelper.ToRadians(kvp.Key)), -(spriteSize.Y / 2f + 40f * _resScale) * (float)Math.Cos(rollRadians - MathHelper.ToRadians(kvp.Key)));
-                            MySprite textSprite = SpriteHelper.CreateText(textPos, _sb, new Color(Color.White, _opacity), maxHeight: 40f * _resScale, maxWidth: 80f * _resScale, alignment: TextAlignment.CENTER, vertCentered: true, fontID: "Monospace");
+                            MySprite textSprite = SpriteHelper.CreateText(textPos, _sb, new Color(Color.White, _opacity), _surface, text: rollStr, scale: 1.1f * _resScale, alignment: TextAlignment.CENTER, vertCentered: true, fontID: "Monospace");
                             _sprites.Add(new MySpriteExt(textSprite, 0.8f));
                         }
                         else if (kvp.Key % 30 == 0)
@@ -351,10 +364,11 @@ namespace IngameScript
                             spriteSize = new Vector2(4f, 60f) * _resScale;
                             spriteColor = new Color(Color.White, _opacity);
 
+                            string rollStr = _rollStrs[kvp.Key];
                             _sb.Clear();
-                            _sb.Append(kvp.Key);
+                            _sb.Append(rollStr);
                             Vector2 textPos = pixelPos + new Vector2((spriteSize.Y / 2f + 40f * _resScale) * (float)Math.Sin(rollRadians - MathHelper.ToRadians(kvp.Key)), -(spriteSize.Y / 2f + 40f * _resScale) * (float)Math.Cos(rollRadians - MathHelper.ToRadians(kvp.Key)));
-                            MySprite textSprite = SpriteHelper.CreateText(textPos, _sb, new Color(Color.White, _opacity), maxHeight: 30f * _resScale, maxWidth: 60f * _resScale, alignment: TextAlignment.CENTER, vertCentered: true, fontID: "Monospace");
+                            MySprite textSprite = SpriteHelper.CreateText(textPos, _sb, new Color(Color.White, _opacity), _surface, text: rollStr, scale: 1f * _resScale, alignment: TextAlignment.CENTER, vertCentered: true, fontID: "Monospace");
                             _sprites.Add(new MySpriteExt(textSprite, 0.8f));
                         }
                         else
@@ -392,7 +406,7 @@ namespace IngameScript
 
                 _finalSprites.AddRange(_staticSprites);
                 _finalSprites.AddRange(_sprites);
-                _finalSprites.SortNoAlloc((a, b) => b.Depth.CompareTo(a.Depth));
+                if (sort) _finalSprites.SortNoAlloc((a, b) => b.Depth.CompareTo(a.Depth));
             }
         }
     }
