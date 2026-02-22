@@ -24,11 +24,6 @@ namespace IngameScript
     {
         public class TargetingSpriteBuilderSimple
         {
-            public float Range
-            {
-                get { return _range; }
-                set { _range = value; }
-            }
             public IReadOnlyList<MySpriteExt> FinalSprites => _finalSprites;
             public IReadOnlyDictionary<long, MyEntitySprite> EntitySprites => _entitySprites;
 

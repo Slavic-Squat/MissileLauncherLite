@@ -269,7 +269,7 @@ namespace IngameScript
 
             public void AppendOverview(StringBuilder sb)
             {
-                sb.AppendLine($"[LASER {ID}]");
+                sb.Append("[LASER ").Append(ID).AppendLine("]");
                 sb.Append("  RNG: ").AppendFormat("{0:F0} m", _maxRaycastDistance).AppendLine();
                 sb.Append("  STATUS: ");
                 if (TargetAquired)
