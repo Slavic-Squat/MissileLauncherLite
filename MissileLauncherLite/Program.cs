@@ -34,7 +34,7 @@ namespace IngameScript
 
         private static List<IMyTerminalBlock> _allBlocks = new List<IMyTerminalBlock>();
         private const string _programName = "MissileLauncherLite";
-        private const string _programVersion = "1.05";
+        private const string _programVersion = "1.06";
 
         private SystemCoordinator _systemCoordinator;
         private bool _isInitialized = false;
@@ -65,8 +65,6 @@ namespace IngameScript
 
             CommandHandlerInst = new CommandHandler();
             CommandHandlerInst.RegisterCommand("INIT", (args) => Init());
-
-            Me.CubeGrid.CustomName = "Missile";
         }
 
         public void Save()
