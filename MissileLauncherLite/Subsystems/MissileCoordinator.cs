@@ -30,9 +30,9 @@ namespace IngameScript
             private IReadOnlyDictionary<long, EntityInfoExt> _targetInfo = new Dictionary<long, EntityInfoExt>();
             private Dictionary<long, EntityInfoExt> _myMissiles = new Dictionary<long, EntityInfoExt>();
             private IEnumerator<int> _launchCoroutine;
-            private double _lastClockSync;
-            private double _lastLaunch;
-            private double _time;
+            private double _lastClockSyncTime;
+            private double _lastLaunchTime;
+            private double _lastRunTime;
             private List<long> _addressesToRemove = new List<long>();
             private List<long> _idsToRemove = new List<long>();
             private byte[] _targetBuffer = new byte[256];
@@ -71,19 +71,15 @@ namespace IngameScript
 
             public void Run(double time)
             {
-                if (_time == 0)
+                if (_lastRunTime == 0)
                 {
-                    _time = time;
+                    _lastRunTime = time;
                     return;
                 }
 
                 foreach (var bay in _missileBays.Values)
                 {
                     bay.Run(time);
-                    if (!bay.IsSelectable && _selectedBays.Contains(bay))
-                    {
-                        DeselectBay(bay);
-                    }
                 }
 
                 Receive();
@@ -99,7 +95,7 @@ namespace IngameScript
 
                 foreach (var address in _addressesToRemove)
                 {
-                    UnregisterMissile(address);
+                    UnregisterMissileTarget(address);
                 }
 
                 _idsToRemove.Clear();
@@ -119,7 +115,7 @@ namespace IngameScript
 
                 Transmit();
 
-                if ((time - _lastClockSync) > 10f)
+                if ((time - _lastClockSyncTime) > 10f)
                 {
                     SyncClocks();
                 }
@@ -128,7 +124,7 @@ namespace IngameScript
                 {
                     _launchCoroutine = null;
                 }
-                _time = time;
+                _lastRunTime = time;
             }
 
             private void AddMissile(EntityInfo missile)
@@ -159,7 +155,7 @@ namespace IngameScript
                 _addressTargetIDMap[address] = targetID;
             }
 
-            private void UnregisterMissile(long address)
+            private void UnregisterMissileTarget(long address)
             {
                 _addressTargetIDMap.Remove(address);
             }
@@ -244,10 +240,10 @@ namespace IngameScript
 
             private void LaunchMissile(MissileBay bay, long targetID)
             {
-                if ((_time - _lastLaunch) < 1f || !_selectedBays.Contains(bay)) return;
+                if ((SystemTime - _lastLaunchTime) < 1f || !_selectedBays.Contains(bay)) return;
 
                 bay.Launch(targetID);
-                _lastLaunch = _time;
+                _lastLaunchTime = SystemTime;
             }
 
             public void LaunchMissiles(long targetID)
@@ -262,7 +258,7 @@ namespace IngameScript
                 foreach (var bay in _selectedBays.ToList())
                 {
                     LaunchMissile(bay, targetID);
-                    while ((_time - _lastLaunch) < 1f)
+                    while ((SystemTime - _lastLaunchTime) < 1f)
                     {
                         yield return loopCounter++;
                     }
@@ -272,7 +268,7 @@ namespace IngameScript
 
             private void SyncClocks()
             {
-                _lastClockSync = _time;
+                _lastClockSyncTime = SystemTime;
                 double globalTime = SystemCoordinator.GlobalTime;
 
                 foreach (long address in _addressTargetIDMap.Keys)

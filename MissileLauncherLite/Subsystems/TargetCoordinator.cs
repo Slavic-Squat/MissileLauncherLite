@@ -27,7 +27,7 @@ namespace IngameScript
             private Dictionary<string, TargetingLaser> _targetingLasers = new Dictionary<string, TargetingLaser>();
             private TargetingLaser _spottingLaser;
             private List<IMyLargeTurretBase> _targetingBlocks = new List<IMyLargeTurretBase>();
-            private double _time;
+            private double _lastRunTime;
             private Dictionary<long, EntityInfoExt> _targets = new Dictionary<long, EntityInfoExt>();
             private long _lockedTargetID = -1;
             private List<long> _targetsToRemove = new List<long>();
@@ -66,9 +66,9 @@ namespace IngameScript
 
             public void Run(double time)
             {
-                if (_time == 0)
+                if (_lastRunTime == 0)
                 {
-                    _time = time;
+                    _lastRunTime = time;
                     return;
                 }
                 double globalTime = SystemCoordinator.GlobalTime;
@@ -91,7 +91,7 @@ namespace IngameScript
                     _spottingLaser.SetTarget(lockedTarget);
                 }
 
-                _spottingLaser.Run(globalTime);
+                _spottingLaser.Run(time);
 
                 foreach (var laser in _targetingLasers.Values)
                 {
@@ -99,7 +99,7 @@ namespace IngameScript
                     {
                         laser.SetTarget(lockedTarget);
                     }
-                    laser.Run(globalTime);
+                    laser.Run(time);
                 }
 
                 foreach (var targetingBlock in _targetingBlocks)
@@ -128,7 +128,7 @@ namespace IngameScript
                     RemoveTarget(targetKey);
                 }
 
-                _time = time;
+                _lastRunTime = time;
             }
 
             private void AddTarget(EntityInfoExt target)

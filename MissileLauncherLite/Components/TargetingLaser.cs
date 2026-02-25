@@ -35,7 +35,7 @@ namespace IngameScript
             private int _matchingDetectionCounter;
             private int _countThreshold;
             private MyDetectedEntityInfo _previouslyDetectedEntity;
-            private double _time;
+            private double _lastRunTime;
             private float _sensitivity;
             private bool _isStatic;
             private bool _isAuxiliary;
@@ -127,13 +127,11 @@ namespace IngameScript
 
             public void Run(double time)
             {
-                if (_time == 0)
+                if (_lastRunTime == 0)
                 {
-                    _time = time;
+                    _lastRunTime = time;
                     return;
                 }
-
-                _cameraArray.Update(time);
 
                 _referenceMatrix = _referenceCamera.WorldMatrix;
 
@@ -146,7 +144,7 @@ namespace IngameScript
                 {
                     AutoTrack(time);
                 }
-                _time = time;
+                _lastRunTime = time;
             }
 
             private void AutoTrack(double time)
@@ -246,7 +244,7 @@ namespace IngameScript
 
             private void AimAt(Vector3D aimTarget, double time)
             {
-                double timeDeltaSeconds = time - _time;
+                double timeDeltaSeconds = time - _lastRunTime;
                 Vector3D aimTargetLocal = Vector3D.TransformNormal(aimTarget - _referenceMatrix.Translation, MatrixD.Transpose(_referenceMatrix));
                 double aimTargetDistance = aimTargetLocal.Length();
                 Vector3D aimTargetDirLocal = aimTargetDistance == 0 ? Vector3D.Zero : aimTargetLocal / aimTargetDistance;

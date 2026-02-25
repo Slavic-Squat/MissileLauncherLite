@@ -53,7 +53,8 @@ namespace IngameScript
             }
             public static long SelfID => ReferenceController.CubeGrid.EntityId;
 
-            private double _time;
+            private double _lastRunTime;
+            private UserInput _userInput;
             
             public TargetCoordinator TargetCoordinator { get; private set; }
             public MissileCoordinator MissileCoordinator { get; private set; }
@@ -73,6 +74,7 @@ namespace IngameScript
                     throw new Exception("Main controller not found!");
                 }
 
+                _userInput = new UserInput(ReferenceController);
                 TargetCoordinator = new TargetCoordinator();
                 MissileCoordinator = new MissileCoordinator(TargetCoordinator.Targets);
                 FlightControl = new FlightControl();
@@ -94,9 +96,9 @@ namespace IngameScript
 
             public void Run(double time)
             {
-                if (_time == 0)
+                if (_lastRunTime == 0)
                 {
-                    _time = time;
+                    _lastRunTime = time;
                     return;
                 }
 
@@ -104,11 +106,13 @@ namespace IngameScript
 
                 Receive();
 
+                _userInput.Run(time);
+                FlightControl.Control(_userInput);
                 TargetCoordinator.Run(time);
                 MissileCoordinator.Run(time);
                 UICoordinator.Run();
 
-                _time = time;
+                _lastRunTime = time;
             }
 
             private void Receive()

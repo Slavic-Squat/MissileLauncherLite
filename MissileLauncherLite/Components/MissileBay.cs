@@ -25,11 +25,11 @@ namespace IngameScript
     {
         public class MissileBay
         {
-            private double _time;
             private IMyProgrammableBlock _missileComputer;
             private IMyMechanicalConnectionBlock _attachment;
             private double _timeSinceLastHandshake;
             private double _timeLastUpdate;
+            private double _lastRunTime;
 
             private MissileType _missileType = MissileType.Unknown;
             private MissileGuidanceType _missileGuidanceType = MissileGuidanceType.Unknown;
@@ -67,7 +67,7 @@ namespace IngameScript
 
             private void InitHandshake()
             {
-                _timeSinceLastHandshake = _time;
+                _timeSinceLastHandshake = SystemTime;
 
                 if (_attachment.TopGrid == null)
                 {
@@ -102,6 +102,8 @@ namespace IngameScript
                 _missileType = MissileEnumHelper.GetMissileType(typeStr);
                 _missileGuidanceType = MissileEnumHelper.GetMissileGuidanceType(guidanceStr);
                 _missilePayload = MissileEnumHelper.GetMissilePayload(payloadStr);
+
+                Status = BayStatus.Building;
             }
 
             private void ForgetMissile()
@@ -117,7 +119,7 @@ namespace IngameScript
 
             private void RequestUpdate()
             {
-                _timeLastUpdate = _time;
+                _timeLastUpdate = SystemTime;
                 if (_missileComputer == null)
                 {
                     Status = BayStatus.Empty;
@@ -151,9 +153,9 @@ namespace IngameScript
 
             public void Run(double time)
             {
-                if (_time == 0)
+                if (_lastRunTime == 0)
                 {
-                    _time = time;
+                    _lastRunTime = time;
                     return;
                 }
 
@@ -169,14 +171,15 @@ namespace IngameScript
                 {
                     ForgetMissile();
                 }
-                _time = time;
+                _lastRunTime = time;
             }
 
             public void Launch(long targetID)
             {
                 if (Status == BayStatus.Ready)
                 {
-                    if (!_missileComputer.TryRun("LAUNCH")) return;
+                    double globalTime = SystemCoordinator.GlobalTime;
+                    if (!_missileComputer.TryRun("LAUNCH " + globalTime)) return;
                     Status = BayStatus.Launching;
                     _attachment.Detach();
                     MissileLaunched?.Invoke(_missileAddress, targetID);

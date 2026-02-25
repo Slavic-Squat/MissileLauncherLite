@@ -25,11 +25,7 @@ namespace IngameScript
         public class FlightControl
         {
             private List<ThrusterGroup> _thrusterGroups = new List<ThrusterGroup>();
-            private List<Gyro> _gyros = new List<Gyro>();
             private float _shipMass;
-            private float _pitchSensitivity = 1f;
-            private float _yawSensitivity = 1f;
-            private float _rollSensitivity = 1f;
             private Dictionary<Direction, float> _maxThrust = new Dictionary<Direction, float>();
 
             public FlightControlMode FlightControlMode { get; private set; } = FlightControlMode.Free;
@@ -51,19 +47,10 @@ namespace IngameScript
                     throw new Exception("No thrusters found!");
                 }
 
-                _gyros = AllBlocks.Where(b => b is IMyGyro).Select(b => new Gyro(b as IMyGyro)).ToList();
-
                 SetFlightControlMode(FlightControlMode.Free);
 
                 _shipMass = Config.Get("Config", "Mass").ToSingle(1000000);
                 Config.Set("Config", "Mass", _shipMass);
-
-                _pitchSensitivity = Config.Get("Config", "PitchSensitivity").ToSingle(1f);
-                Config.Set("Config", "PitchSensitivity", _pitchSensitivity);
-                _yawSensitivity = Config.Get("Config", "YawSensitivity").ToSingle(1f);
-                Config.Set("Config", "YawSensitivity", _yawSensitivity);
-                _rollSensitivity = Config.Get("Config", "RollSensitivity").ToSingle(1f);
-                Config.Set("Config", "RollSensitivity", _rollSensitivity);
 
                 MePb.CustomData = Config.ToString();
 
@@ -106,11 +93,6 @@ namespace IngameScript
                     {
                         _maxThrust[Direction.Forward] += -thrust.Z;
                     }
-                }
-
-                foreach (var gyro in _gyros)
-                {
-                    gyro.GyroBlock.GyroOverride = true;
                 }
             }
 
@@ -183,28 +165,6 @@ namespace IngameScript
 
                     default:
                         break;
-                }
-
-                Vector3 momentLocal = Vector3.Zero;
-                if (userInput.QPress)
-                {
-                    momentLocal.Z = 1f * _rollSensitivity;
-                }
-                else if (userInput.EPress)
-                {
-                    momentLocal.Z = -1f * _rollSensitivity;
-                }
-                momentLocal.X = userInput.MouseInput.X * _pitchSensitivity;
-                momentLocal.Y = userInput.MouseInput.Y * _yawSensitivity;
-
-                Vector3 momentWorld = Vector3.TransformNormal(momentLocal, referenceOrienation);
-
-                foreach (var gyrp in _gyros)
-                {
-                    Vector3 momentGyro = Vector3.TransformNormal(momentWorld, MatrixD.Transpose(gyrp.GyroBlock.WorldMatrix.GetOrientation()));
-                    gyrp.Pitch = momentGyro.X;
-                    gyrp.Yaw = momentGyro.Y;
-                    gyrp.Roll = momentGyro.Z;
                 }
             }
 
