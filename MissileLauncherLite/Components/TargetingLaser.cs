@@ -30,11 +30,13 @@ namespace IngameScript
             private CameraArray _cameraArray;
             private IMyCameraBlock _referenceCamera;
 
+            private EntityInfoExt _lastTarget;
+            private EntityInfoExt _target;
             private float _maxRaycastDistance;
             private MatrixD _referenceMatrix;
             private int _matchingDetectionCounter;
             private int _countThreshold;
-            private MyDetectedEntityInfo _previouslyDetectedEntity;
+            private MyDetectedEntityInfo _lastDetectedEntity;
             private double _lastRunTime;
             private float _sensitivity;
             private bool _isStatic;
@@ -46,7 +48,7 @@ namespace IngameScript
             private PIDControl _elevationPID;
 
             public string ID { get; private set; }
-            public bool TargetSet => Target.IsValid;
+            public bool TargetSet => _target.IsValid;
             public float MaxRaycastDistance
             {
                 get
@@ -59,7 +61,7 @@ namespace IngameScript
                     _cameraArray.MaxRaycastDistance = value * 1.1f;
                 }
             }
-            public EntityInfoExt Target { get; private set; }
+            public EntityInfoExt Target => _target;
             public bool TargetAquired { get; private set; }
             public event Action<EntityInfoExt> OnTargetUpdated;
 
@@ -151,9 +153,9 @@ namespace IngameScript
             {
                 double globalTime = SystemCoordinator.GlobalTime;
 
-                double timeSinceLastDetection = globalTime - Target.TimeRecorded;
-                Vector3D estimatedTargetPosition = Target.Position + Target.Velocity * timeSinceLastDetection;
-                double estimatedTargetDistance = (estimatedTargetPosition - _referenceMatrix.Translation).Length();
+                double timeSinceLastDetection = globalTime - _target.TimeRecorded;
+                EntityInfo estimatedTarget = EstimateTargetKinematics(_target.Info, _lastTarget.Info);
+                double estimatedTargetDistance = (estimatedTarget.Position - _referenceMatrix.Translation).Length();
 
                 if (estimatedTargetDistance > _maxRaycastDistance || timeSinceLastDetection > 5)
                 {
@@ -163,10 +165,10 @@ namespace IngameScript
 
                 if (!_isStatic)
                 {
-                    AimAt(estimatedTargetPosition, time);
+                    AimAt(estimatedTarget.Position, time);
                 }
 
-                FireLaser(estimatedTargetPosition, 10f);
+                FireLaser(estimatedTarget.Position, 10f);
             }
 
             private void MoveLaser(float azimuthInput = 0, float elevationInput = 0)
@@ -177,7 +179,8 @@ namespace IngameScript
 
             public void ForgetTarget()
             {
-                Target = default(EntityInfoExt);
+                _target = default(EntityInfoExt);
+                _lastTarget = default(EntityInfoExt);
                 _matchingDetectionCounter = 0;
                 TargetAquired = false;
             }
@@ -195,7 +198,7 @@ namespace IngameScript
                 {
                     if (!TargetSet && !_isAuxiliary)
                     {
-                        if (raycastResult.EntityId == _previouslyDetectedEntity.EntityId)
+                        if (raycastResult.EntityId == _lastDetectedEntity.EntityId)
                         {
                             _matchingDetectionCounter++;
                         }
@@ -204,20 +207,22 @@ namespace IngameScript
                             _matchingDetectionCounter = 0;
                         }
 
-                        _previouslyDetectedEntity = raycastResult;
+                        _lastDetectedEntity = raycastResult;
 
                         if (_matchingDetectionCounter >= _countThreshold)
                         {
-                            Target = new EntityInfoExt(raycastResult, globalTime);
+                            _lastTarget = _target;
+                            _target = new EntityInfoExt(raycastResult, globalTime);
                             TargetAquired = true;
-                            OnTargetUpdated?.Invoke(Target);
+                            OnTargetUpdated?.Invoke(_target);
                         }
                     }
-                    else if (raycastResult.EntityId == Target.EntityID)
+                    else if (raycastResult.EntityId == _target.EntityID)
                     {
-                        Target = new EntityInfoExt(raycastResult, globalTime);
+                        _lastTarget = _target;
+                        _target = new EntityInfoExt(raycastResult, globalTime);
                         TargetAquired = true;
-                        OnTargetUpdated?.Invoke(Target);
+                        OnTargetUpdated?.Invoke(_target);
                     }
                 }
             }
@@ -231,14 +236,16 @@ namespace IngameScript
 
             public void SetTarget(EntityInfoExt target)
             {
-                if (target.EntityID != Target.EntityID)
+                if (target.EntityID != _target.EntityID)
                 {
-                    Target = target;
+                    _lastTarget = default(EntityInfoExt);
+                    _target = target;
                     TargetAquired = false;
                 }
                 else
                 {
-                    Target = Target.Merge(target);
+                    _lastTarget = _target;
+                    _target = _target.Merge(target);
                 }
             }
 
@@ -263,6 +270,27 @@ namespace IngameScript
                 }
 
                 MoveLaser(azimuthInput, elevationInput);
+            }
+
+            private EntityInfo EstimateTargetKinematics(EntityInfo currentTarget, EntityInfo lastTarget)
+            {
+                if (!currentTarget.IsValid || !lastTarget.IsValid || currentTarget.EntityID != lastTarget.EntityID)
+                {
+                    return currentTarget;
+                }
+                Vector3D accel = Vector3D.Zero;
+                Vector3D velDelta = currentTarget.Velocity - lastTarget.Velocity;
+                double recordedTimeDelta = currentTarget.TimeRecorded - lastTarget.TimeRecorded;
+                if (recordedTimeDelta > 0)
+                {
+                    accel = velDelta / recordedTimeDelta;
+                }
+
+                double timeSinceLastRecord = SystemCoordinator.GlobalTime - currentTarget.TimeRecorded;
+                Vector3D estimatedVel = currentTarget.Velocity + accel * timeSinceLastRecord;
+                Vector3D estimatedPos = currentTarget.Position + currentTarget.Velocity * timeSinceLastRecord + 0.5 * accel * timeSinceLastRecord * timeSinceLastRecord;
+
+                return new EntityInfo(currentTarget.EntityID, estimatedPos, estimatedVel, SystemCoordinator.GlobalTime);
             }
 
             public void AppendOverview(StringBuilder sb)
