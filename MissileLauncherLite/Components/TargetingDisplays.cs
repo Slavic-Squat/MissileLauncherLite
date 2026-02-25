@@ -40,7 +40,7 @@ namespace IngameScript
 
             private void Init()
             {
-                IEnumerable<IMyTerminalBlock> temp = AllGridBlocks.Where(b => b is IMyTextSurface && b.CustomName.ToUpper().Contains("TARGETING DISPLAY"));
+                IEnumerable<IMyTerminalBlock> temp = AllBlocks.Where(b => b is IMyTextSurface && b.CustomName.ToUpper().Contains("TARGETING DISPLAY"));
 
                 foreach (var displayBlock in temp)
                 {

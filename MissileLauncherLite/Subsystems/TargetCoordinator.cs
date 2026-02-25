@@ -61,7 +61,7 @@ namespace IngameScript
                 _spottingLaser = new TargetingLaser("SPOTTER", true, false);
                 _spottingLaser.OnTargetUpdated += AddTarget;
 
-                _targetingBlocks = AllGridBlocks.Where(b => b is IMyLargeTurretBase).Cast<IMyLargeTurretBase>().ToList();
+                _targetingBlocks = AllBlocks.Where(b => b is IMyLargeTurretBase).Cast<IMyLargeTurretBase>().ToList();
             }
 
             public void Run(double time)

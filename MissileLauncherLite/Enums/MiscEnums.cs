@@ -24,7 +24,7 @@ namespace IngameScript
     {
         public enum BayStatus : byte
         {
-            Empty, Building, Fueling, Ready, Active, Launching
+            Empty, Building, Fueling, Ready, Launching
         }
         public enum Direction
         {
@@ -56,7 +56,6 @@ namespace IngameScript
                     case BayStatus.Building: return "BUILDING";
                     case BayStatus.Fueling: return "FUELING";
                     case BayStatus.Ready: return "READY";
-                    case BayStatus.Active: return "ACTIVE";
                     case BayStatus.Launching: return "LAUNCHING";
                     default: return "N/A";
                 }
@@ -70,7 +69,6 @@ namespace IngameScript
                     case BayStatus.Building: return "BLD";
                     case BayStatus.Fueling: return "FUEL";
                     case BayStatus.Ready: return "RDY";
-                    case BayStatus.Active: return "ACT";
                     case BayStatus.Launching: return "LNCH";
                     default: return "N/A";
                 }

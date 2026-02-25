@@ -44,7 +44,7 @@ namespace IngameScript
 
             private void Init()
             {
-                _hudDisplay = AllGridBlocks.FirstOrDefault(block => block is IMyTextSurface && block.CustomName.ToUpper().Contains("HUD")) as IMyTextSurface;
+                _hudDisplay = AllBlocks.FirstOrDefault(block => block is IMyTextSurface && block.CustomName.ToUpper().Contains("HUD")) as IMyTextSurface;
 
                 if (_hudDisplay == null)
                 {

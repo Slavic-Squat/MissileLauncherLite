@@ -67,7 +67,7 @@ namespace IngameScript
 
             private void Init()
             {
-                ReferenceController = AllGridBlocks.FirstOrDefault(b => b is IMyShipController && b.CustomName.ToUpper().Contains("MAIN CONTROLLER")) as IMyShipController;
+                ReferenceController = AllBlocks.FirstOrDefault(b => b is IMyShipController && b.CustomName.ToUpper().Contains("MAIN CONTROLLER")) as IMyShipController;
                 if (ReferenceController == null)
                 {
                     throw new Exception("Main controller not found!");
@@ -78,16 +78,18 @@ namespace IngameScript
                 FlightControl = new FlightControl();
                 UICoordinator = new UICoordinator(this);
 
-                CommandHandler0.RegisterCommand("START_SEARCH", (args) => TargetCoordinator.StartSearch());
-                CommandHandler0.RegisterCommand("STOP_SEARCH", (args) => TargetCoordinator.StopSearch());
-                CommandHandler0.RegisterCommand("UNLOCK_TARGET", (args) => TargetCoordinator.UnlockTarget());
-                CommandHandler0.RegisterCommand("CYCLE_FLIGHT_CTRL", (args) => FlightControl.CycleFlightControlMode());
-                CommandHandler0.RegisterCommand("TOGGLE_BAY", (args) => { if (args.Length > 0) MissileCoordinator.ToggleBay(args[0]); });
-                CommandHandler0.RegisterCommand("ACTIVATE_ALL", (args) => MissileCoordinator.ActivateAll());
-                CommandHandler0.RegisterCommand("DEACTIVATE_ALL", (args) => MissileCoordinator.DeactivateAll());
-                CommandHandler0.RegisterCommand("LAUNCH", (args) => { if (TargetCoordinator.HasLockedTarget) MissileCoordinator.LaunchMissile(TargetCoordinator.LockedTargetID); });
-                CommandHandler0.RegisterCommand("LAUNCH_ALL", (args) => { if (TargetCoordinator.HasLockedTarget) MissileCoordinator.LaunchMissiles(TargetCoordinator.LockedTargetID); });
-                CommandHandler0.RegisterCommand("ABORT", (args) => MissileCoordinator.AbortAll());
+                CommunicationHandlerInst.RegisterTag("COMMANDS", true);
+
+                CommandHandlerInst.RegisterCommand("START_SEARCH", (args) => TargetCoordinator.StartSearch());
+                CommandHandlerInst.RegisterCommand("STOP_SEARCH", (args) => TargetCoordinator.StopSearch());
+                CommandHandlerInst.RegisterCommand("UNLOCK_TARGET", (args) => TargetCoordinator.UnlockTarget());
+                CommandHandlerInst.RegisterCommand("CYCLE_FLIGHT_CTRL", (args) => FlightControl.CycleFlightControlMode());
+                CommandHandlerInst.RegisterCommand("TOGGLE_BAYS", (args) => MissileCoordinator.ToggleBays(args));
+                CommandHandlerInst.RegisterCommand("SELECT_ALL", (args) => MissileCoordinator.SelectAll());
+                CommandHandlerInst.RegisterCommand("DESELECT_ALL", (args) => MissileCoordinator.DeselectAll());
+                CommandHandlerInst.RegisterCommand("LAUNCH", (args) => { if (TargetCoordinator.HasLockedTarget) MissileCoordinator.LaunchMissile(TargetCoordinator.LockedTargetID); });
+                CommandHandlerInst.RegisterCommand("LAUNCH_ALL", (args) => { if (TargetCoordinator.HasLockedTarget) MissileCoordinator.LaunchMissiles(TargetCoordinator.LockedTargetID); });
+                CommandHandlerInst.RegisterCommand("ABORT", (args) => MissileCoordinator.AbortAll());
             }
 
             public void Run(double time)
@@ -100,11 +102,26 @@ namespace IngameScript
 
                 GlobalTime = time;
 
+                Receive();
+
                 TargetCoordinator.Run(time);
                 MissileCoordinator.Run(time);
                 UICoordinator.Run();
 
                 _time = time;
+            }
+
+            private void Receive()
+            {
+                while (CommunicationHandlerInst.HasMessage("COMMANDS", true))
+                {
+                    MyIGCMessage msg;
+                    if (CommunicationHandlerInst.TryRetrieveMessage("COMMANDS", true, out msg))
+                    {
+                        string command = msg.As<string>();
+                        CommandHandlerInst.RunCommands(command);
+                    }
+                }
             }
         }
     }

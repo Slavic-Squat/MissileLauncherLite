@@ -114,7 +114,7 @@ namespace IngameScript
                     _elevationPID = null;
                 }
 
-                _referenceCamera = AllGridBlocks.FirstOrDefault(b => b is IMyCameraBlock && b.CustomName.ToUpper().Contains($"LASER {ID} REFERENCE CAMERA")) as IMyCameraBlock;
+                _referenceCamera = AllBlocks.FirstOrDefault(b => b is IMyCameraBlock && b.CustomName.ToUpper().Contains($"LASER {ID} REFERENCE CAMERA")) as IMyCameraBlock;
                 if (_referenceCamera == null)
                 {
                     throw new Exception($"Reference Camera for Laser {ID} not found!");

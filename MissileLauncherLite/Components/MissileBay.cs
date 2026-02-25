@@ -28,23 +28,23 @@ namespace IngameScript
             private double _time;
             private IMyProgrammableBlock _missileComputer;
             private IMyMechanicalConnectionBlock _attachment;
-            private MyIni _missileConfig = new MyIni();
-            private string _missileCustomData = "";
-            private double _timeLastRegister;
+            private double _timeSinceLastHandshake;
             private double _timeLastUpdate;
+
+            private MissileType _missileType = MissileType.Unknown;
+            private MissileGuidanceType _missileGuidanceType = MissileGuidanceType.Unknown;
+            private MissilePayload _missilePayload = MissilePayload.Unknown;
+            private MissileStage _missileStage = MissileStage.Unknown;
+            private long _missileAddress = -1;
+            private StringBuilder _cmdSb = new StringBuilder();
 
             public string ID {  get; private set; }
             public BayStatus Status { get; private set; } = BayStatus.Empty;
-            public MissileType MissileType { get; private set; } = MissileType.Unknown;
-            public MissileGuidanceType MissileGuidanceType { get; private set; } = MissileGuidanceType.Unknown;
-            public MissilePayload MissilePayload { get; private set; } = MissilePayload.Unknown;
-            public MissileStage MissileStage { get; private set; } = MissileStage.Unknown;
-            public long MissileAddress { get; private set; } = -1;
-            public bool IsActivatable => Status == BayStatus.Ready || Status == BayStatus.Active;
+            public bool IsSelectable => Status == BayStatus.Ready;
+            public bool IsSelected { get; set; }
 
-            public event Action MissileRegistered;
-            public event Action MissileUnregistered;
-            public event Action<long> MissileLaunched;
+            public event Action<long, long> MissileLaunched;
+            public event Action MissileForgot;
 
             public MissileBay(string id)
             {
@@ -55,17 +55,19 @@ namespace IngameScript
 
             private void Init()
             {
-                _attachment = AllGridBlocks.FirstOrDefault(b => b is IMyMechanicalConnectionBlock && b.CustomName.ToUpper().Contains($"MISSILE BAY {ID} ATTACHMENT")) as IMyMechanicalConnectionBlock;
+                _attachment = AllBlocks.FirstOrDefault(b => b is IMyMechanicalConnectionBlock && b.CustomName.ToUpper().Contains($"MISSILE BAY {ID} ATTACHMENT")) as IMyMechanicalConnectionBlock;
                 if (_attachment == null)
                 {
                     throw new Exception($"No attachment found for Missile Bay {ID}!");
                 }
+
+                CommandHandlerInst.RegisterCommand("HANDSHAKE_BAY_" + ID, (args) => { if (args.Length > 3) { ReceiveHandshake(args[0], args[1], args[2], args[3]); } });
+                CommandHandlerInst.RegisterCommand("UPDATE_BAY_" + ID, (args) => { if (args.Length > 0) { ReceiveUpdate(args[0]); } });
             }
 
-            private void RegisterMissile()
+            private void InitHandshake()
             {
-                _timeLastRegister = _time;
-                UnregisterMissile();
+                _timeSinceLastHandshake = _time;
 
                 if (_attachment.TopGrid == null)
                 {
@@ -81,75 +83,69 @@ namespace IngameScript
                 }
                 _missileComputer = temp[0];
                 _missileComputer.Enabled = true;
-                if (!_missileComputer.TryRun("INIT"))
+
+                _cmdSb.Clear();
+                _cmdSb.Append("INIT").Append(" | ");
+                _cmdSb.Append("HANDSHAKE ").Append(ID).Append(" ").Append(IGCS.Me).Append(" ").Append(SystemCoordinator.SelfID);
+                if (!_missileComputer.TryRun(_cmdSb.ToString()))
                 {
                     Status = BayStatus.Empty;
                     return;
                 }
-
-                Update();
-                
-                if (MissileAddress != -1)
-                {
-                    Status = BayStatus.Building;
-                    MissileRegistered?.Invoke();
-                }
             }
 
-            private void UnregisterMissile()
+            private void ReceiveHandshake(string missileAddressStr, string typeStr, string guidanceStr, string payloadStr)
             {
-                _missileConfig.Clear();
-                MissileAddress = -1;
-                MissileType = MissileType.Unknown;
-                MissileGuidanceType = MissileGuidanceType.Unknown;
-                MissilePayload = MissilePayload.Unknown;
+                long missileAddress;
+                if (!long.TryParse(missileAddressStr, out missileAddress)) return;
+                _missileAddress = missileAddress;
+                _missileType = MissileEnumHelper.GetMissileType(typeStr);
+                _missileGuidanceType = MissileEnumHelper.GetMissileGuidanceType(guidanceStr);
+                _missilePayload = MissileEnumHelper.GetMissilePayload(payloadStr);
+            }
+
+            private void ForgetMissile()
+            {
+                _missileAddress = -1;
+                _missileType = MissileType.Unknown;
+                _missileGuidanceType = MissileGuidanceType.Unknown;
+                _missilePayload = MissilePayload.Unknown;
                 Status = BayStatus.Empty;
                 _missileComputer = null;
-                MissileUnregistered?.Invoke();
+                MissileForgot?.Invoke();
             }
 
-            private void Update()
+            private void RequestUpdate()
             {
                 _timeLastUpdate = _time;
-                if (_missileComputer != null && Status < BayStatus.Ready)
+                if (_missileComputer == null)
                 {
-                    _missileComputer.TryRun("");
+                    Status = BayStatus.Empty;
+                    return;
                 }
-                if (_missileComputer != null && _missileComputer.CustomData != _missileCustomData)
-                {
-                    _missileConfig.Clear();
-                    if (_missileConfig.TryParse(_missileComputer.CustomData))
-                    {
-                        MissileAddress = _missileConfig.Get("Config", "MissileAddress").ToInt64(-1);
-                        MissileType = MissileEnumHelper.GetMissileType(_missileConfig.Get("Config", "Type").ToString());
-                        MissileGuidanceType = MissileEnumHelper.GetMissileGuidanceType(_missileConfig.Get("Config", "GuidanceType").ToString());
-                        MissilePayload = MissileEnumHelper.GetMissilePayload(_missileConfig.Get("Config", "Payload").ToString());
-                        MissileStage = MissileEnumHelper.GetMissileStage(_missileConfig.Get("Config", "Stage").ToString());
-                    }
+                _cmdSb.Clear();
+                _cmdSb.Append("UPDATE_BAY");
+                _missileComputer.TryRun(_cmdSb.ToString());
+            }
 
-                    switch (MissileStage)
-                    {
-                        case MissileStage.Building:
-                            Status = BayStatus.Building;
-                            break;
-                        case MissileStage.Fueling:
-                            Status = BayStatus.Fueling;
-                            break;
-                        case MissileStage.Idle:
-                            Status = BayStatus.Ready;
-                            break;
-                        case MissileStage.Active:
-                            Status = BayStatus.Active;
-                            break;
-                        case MissileStage.Launching:
-                            Status = BayStatus.Launching;
-                            break;
-                    }
-                }
+            public void ReceiveUpdate(string stageStr)
+            {
+                _missileStage = MissileEnumHelper.GetMissileStage(stageStr);
 
-                if (Status > BayStatus.Empty && (!_attachment.IsAttached || _missileComputer == null || !GTS.CanAccess(_missileComputer) || MissileAddress == -1))
+                switch (_missileStage)
                 {
-                    UnregisterMissile();
+                    case MissileStage.Building:
+                        Status = BayStatus.Building;
+                        break;
+                    case MissileStage.Fueling:
+                        Status = BayStatus.Fueling;
+                        break;
+                    case MissileStage.Idle:
+                        Status = BayStatus.Ready;
+                        break;
+                    case MissileStage.Launching:
+                        Status = BayStatus.Launching;
+                        break;
                 }
             }
 
@@ -161,45 +157,29 @@ namespace IngameScript
                     return;
                 }
 
-                if (Status == BayStatus.Empty && (time - _timeLastRegister) > 5f)
+                if (Status == BayStatus.Empty && (time - _timeSinceLastHandshake) > 5f && _attachment.TopGrid != null)
                 {
-                    RegisterMissile();
+                    InitHandshake();
                 }
                 else if (Status != BayStatus.Empty && (time - _timeLastUpdate) > 1f)
                 {
-                    Update();
+                    RequestUpdate();
+                }
+                else if (Status != BayStatus.Empty && _attachment.TopGrid == null)
+                {
+                    ForgetMissile();
                 }
                 _time = time;
             }
 
-            public void ActivateMissile()
-            {
-                if (Status == BayStatus.Ready)
-                {
-                    double globalTime = SystemCoordinator.GlobalTime;
-                    long selfID = SystemCoordinator.SelfID;
-                    if (!_missileComputer.TryRun("TURN_ON")) return;
-                    if (!_missileComputer.TryRun($"ACTIVATE {IGCS.Me} {selfID} {globalTime}")) return;
-                }
-            }
-
-            public void DeactivateMissile()
-            {
-                if (Status == BayStatus.Active)
-                {
-                    if (!_missileComputer.TryRun("DEACTIVATE")) return;
-                    if (!_missileComputer.TryRun("TURN_OFF")) return;
-                }
-            }
-
             public void Launch(long targetID)
             {
-                if (Status == BayStatus.Active)
+                if (Status == BayStatus.Ready)
                 {
                     if (!_missileComputer.TryRun("LAUNCH")) return;
                     Status = BayStatus.Launching;
                     _attachment.Detach();
-                    MissileLaunched?.Invoke(targetID);
+                    MissileLaunched?.Invoke(_missileAddress, targetID);
                 }
             }
 
@@ -207,14 +187,14 @@ namespace IngameScript
             {
                 sb.Append("[BAY ").Append(ID).AppendLine("]");
                 sb.Append("  STATUS: ").AppendLine(MiscEnumHelper.GetBayStatusStr(Status));
-                sb.Append("  MISL TYPE: ").AppendLine(MissileEnumHelper.GetMissileTypeStr(MissileType));
-                sb.Append("  MISL GUIDANCE: ").AppendLine(MissileEnumHelper.GetMissileGuidanceStr(MissileGuidanceType));
-                sb.Append("  MISL PAYLOAD: ").Append(MissileEnumHelper.GetMissilePayloadStr(MissilePayload));
+                sb.Append("  MISL TYPE: ").AppendLine(MissileEnumHelper.GetMissileTypeStr(_missileType));
+                sb.Append("  MISL GUIDANCE: ").AppendLine(MissileEnumHelper.GetMissileGuidanceStr(_missileGuidanceType));
+                sb.Append("  MISL PAYLOAD: ").Append(MissileEnumHelper.GetMissilePayloadStr(_missilePayload));
             }
 
             public void AppendOverviewShort(StringBuilder sb)
             {
-                if (Status == BayStatus.Active)
+                if (IsSelected)
                 {
                     sb.Append("-");
                 }
