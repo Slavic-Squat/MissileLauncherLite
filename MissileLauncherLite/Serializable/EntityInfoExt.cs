@@ -88,16 +88,19 @@ namespace IngameScript
             public void AppendInfo(StringBuilder sb)
             {
                 sb.AppendLine("[ENTITY INFO]");
-                sb.AppendLine("-----------------------");
+                sb.AppendLine("--------------");
                 sb.Append("  TYPE: ").AppendLine(EntityEnumHelper.GetEntityTypeStr(Type));
                 sb.Append("  REL: ").AppendLine(EntityEnumHelper.GetEntityRelationStr(Relation));
                 double distance = Vector3D.Distance(SystemCoordinator.ReferencePosition, Position);
+                sb.Append("  RNG: ");
                 UIUtilities.AppendDistance(sb, distance);
                 sb.AppendLine();
                 double speed = Info.Velocity.Length();
+                sb.Append("  SPD: ");
                 UIUtilities.AppendDistance(sb, speed);
                 sb.AppendLine("/s");
-                double age = (SystemCoordinator.GlobalTime - Info.TimeRecorded) * 1000;
+                double age = SystemCoordinator.GlobalTime - Info.TimeRecorded;
+                sb.Append("  AGE: ");
                 UIUtilities.AppendTime(sb, age);
 
                 if (Info.Type == EntityType.Missile && Info.MissileInfo.IsValid)
