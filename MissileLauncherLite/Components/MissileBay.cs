@@ -38,13 +38,12 @@ namespace IngameScript
             private long _missileAddress = -1;
             private StringBuilder _cmdSb = new StringBuilder();
 
-            public string ID {  get; private set; }
+            public string ID { get; private set; }
             public BayStatus Status { get; private set; } = BayStatus.Empty;
             public bool IsSelectable => Status == BayStatus.Ready;
-            public bool IsSelected { get; set; }
+            public bool IsSelected { get; private set; }
 
             public event Action<long, long> MissileLaunched;
-            public event Action MissileForgot;
 
             public MissileBay(string id)
             {
@@ -114,7 +113,6 @@ namespace IngameScript
                 _missilePayload = MissilePayload.Unknown;
                 Status = BayStatus.Empty;
                 _missileComputer = null;
-                MissileForgot?.Invoke();
             }
 
             private void RequestUpdate()
@@ -176,13 +174,38 @@ namespace IngameScript
 
             public void Launch(long targetID)
             {
-                if (Status == BayStatus.Ready)
+                if (IsSelected)
                 {
                     double globalTime = SystemCoordinator.GlobalTime;
                     if (!_missileComputer.TryRun("LAUNCH " + globalTime)) return;
                     Status = BayStatus.Launching;
                     _attachment.Detach();
                     MissileLaunched?.Invoke(_missileAddress, targetID);
+                }
+            }
+
+            public void Select()
+            {
+                if (IsSelectable)
+                {
+                    IsSelected = true;
+                }
+            }
+
+            public void Deselect()
+            {
+                IsSelected = false;
+            }
+
+            public void Toggle()
+            {
+                if (IsSelected)
+                {
+                    Deselect();
+                }
+                else
+                {
+                    Select();
                 }
             }
 
@@ -195,13 +218,41 @@ namespace IngameScript
                 sb.Append("  MISL PAYLOAD: ").Append(MissileEnumHelper.GetMissilePayloadStr(_missilePayload));
             }
 
-            public void AppendOverviewShort(StringBuilder sb)
+            public void AppendStatusShort(StringBuilder sb)
             {
                 if (IsSelected)
                 {
                     sb.Append("-");
                 }
                 sb.Append("[").Append(ID).Append("]: ").Append(MiscEnumHelper.GetBayStatusStrShort(Status));
+            }
+
+            public void AppendPayloadShort(StringBuilder sb)
+            {
+                if (IsSelected)
+                {
+                    sb.Append("-");
+
+                }
+                sb.Append("[").Append(ID).Append("]: ").Append(MissileEnumHelper.GetMissilePayloadStr(_missilePayload));
+            }
+
+            public void AppendTypeShort(StringBuilder sb)
+            {
+                if (IsSelected)
+                {
+                    sb.Append("-");
+                }
+                sb.Append("[").Append(ID).Append("]: ").Append(MissileEnumHelper.GetMissileTypeStr(_missileType));
+            }
+
+            public void AppendGuidanceShort(StringBuilder sb)
+            {
+                if (IsSelected)
+                {
+                    sb.Append("-");
+                }
+                sb.Append("[").Append(ID).Append("]: ").Append(MissileEnumHelper.GetMissileGuidanceStr(_missileGuidanceType));
             }
         }
     }

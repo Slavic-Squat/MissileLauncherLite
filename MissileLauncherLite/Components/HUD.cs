@@ -117,40 +117,20 @@ namespace IngameScript
                 }
 
                 _sb.Clear();
-                int count = 0;
-                foreach (var missileBay in missileBays.Values)
-                {
-                    missileBay.AppendOverviewShort(_sb);
-                    if (++count < missileBays.Count)
-                    {
-                        _sb.AppendLine("\n");
-                    }
-                }
-                Vector2 bayTextSize = SpriteHelper.MeasureStringInPixels(_hudDisplay, _sb, "Monospace", 1f * _resScale);
-                Vector2 bayTextPos = new Vector2(_screenBounds.X + 10f * _resScale, _screenBounds.Bottom - bayTextSize.Y - 10f * _resScale);
-                var bayTextSprite = SpriteHelper.CreateText(bayTextPos, _sb, new Color(Color.White, _opacity), _hudDisplay, scale: 1f * _resScale, fontID: "Monospace");
+                _sb.Append(MiscEnumHelper.GetFlightControlModeStr(_uiCoordinator.FlightControl.FlightControlMode));
+                Vector2 flightControlTextPos = _screenBounds.Position + new Vector2(10f, 150f) * _resScale;
+                Vector2 flightControlTextSize = SpriteHelper.MeasureStringInPixels(_hudDisplay, _sb, "Monospace", 1.2f * _resScale);
+                var flightControlTextSprite = SpriteHelper.CreateText(flightControlTextPos, _sb, new Color(Color.White, _opacity), _hudDisplay, scale: 1.2f * _resScale, fontID: "Monospace");
 
                 MySprite textBackground = new MySprite()
                 {
                     Type = SpriteType.TEXTURE,
                     Data = "SquareSimple",
-                    Position = bayTextPos + bayTextSize / 2f,
-                    Size = bayTextSize + new Vector2(20f, 20f) * _resScale,
+                    Position = flightControlTextPos + flightControlTextSize / 2f,
+                    Size = flightControlTextSize + new Vector2(20f, 20f) * _resScale,
                     Color = Color.Black,
                     Alignment = TextAlignment.CENTER
                 };
-
-                _allSprites.Add(new MySpriteExt(textBackground, 0.02f));
-                _allSprites.Add(new MySpriteExt(bayTextSprite, 0.01f));
-
-                _sb.Clear();
-                _sb.Append(MiscEnumHelper.GetFlightControlModeStr(_uiCoordinator.FlightControl.FlightControlMode));
-                Vector2 flightControlTextPos = _screenBounds.Position + new Vector2(10f, 150f) * _resScale;
-                Vector2 flightControlTextSize = SpriteHelper.MeasureStringInPixels(_hudDisplay, _sb, "Monospace", 1.2f * _resScale);
-                var flightControlTextSprite = SpriteHelper.CreateText(flightControlTextPos, _sb, new Color(Color.White, _opacity), _hudDisplay, scale: 1.2f * _resScale, fontID: "Monospace");
-                
-                textBackground.Position = flightControlTextPos + flightControlTextSize / 2f;
-                textBackground.Size = flightControlTextSize + new Vector2(20f, 20f) * _resScale;
 
                 _allSprites.Add(new MySpriteExt(textBackground, 0.02f));
                 _allSprites.Add(new MySpriteExt(flightControlTextSprite, 0.01f));

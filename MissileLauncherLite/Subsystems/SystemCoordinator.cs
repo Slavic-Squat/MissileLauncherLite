@@ -92,6 +92,8 @@ namespace IngameScript
                 CommandHandlerInst.RegisterCommand("LAUNCH", (args) => { if (TargetCoordinator.HasLockedTarget) MissileCoordinator.LaunchMissile(TargetCoordinator.LockedTargetID); });
                 CommandHandlerInst.RegisterCommand("LAUNCH_ALL", (args) => { if (TargetCoordinator.HasLockedTarget) MissileCoordinator.LaunchMissiles(TargetCoordinator.LockedTargetID); });
                 CommandHandlerInst.RegisterCommand("ABORT", (args) => MissileCoordinator.AbortAll());
+                CommandHandlerInst.RegisterCommand("CYLCE_PAGE", (args) => UICoordinator.CyclePage());
+                CommandHandlerInst.RegisterCommand("CYCLE_DISPLAY_MODE", (args) => UICoordinator.CycleDisplayMode());
             }
 
             public void Run(double time)

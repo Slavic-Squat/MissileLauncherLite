@@ -52,7 +52,7 @@ namespace IngameScript
 
                 for (int i = 0; i < numLasers; i++)
                 {
-                    string id = i.ToString().ToUpper();
+                    string id = i.ToString("D2");
                     TargetingLaser laser = new TargetingLaser(id, false, true);
                     laser.OnTargetUpdated += AddTarget;
                     _targetingLasers[id] = laser;
