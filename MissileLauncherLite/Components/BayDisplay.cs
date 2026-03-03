@@ -74,7 +74,7 @@ namespace IngameScript
                 {
                     _sb.Append(' ', rem);
                 }
-                _sb.Append(_pageStr);
+                _sb.AppendLine(_pageStr);
                 _sb.Append('-', 37);
 
                 for (int i = 0; i < _rows; i++)
