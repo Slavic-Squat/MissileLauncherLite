@@ -30,6 +30,7 @@ namespace IngameScript
             private double _timeSinceLastHandshake;
             private double _timeLastUpdate;
             private double _lastRunTime;
+            private bool _isSelected;
 
             private MissileType _missileType = MissileType.Unknown;
             private MissileGuidanceType _missileGuidanceType = MissileGuidanceType.Unknown;
@@ -41,7 +42,17 @@ namespace IngameScript
             public string ID { get; private set; }
             public BayStatus Status { get; private set; } = BayStatus.Empty;
             public bool IsSelectable => Status == BayStatus.Ready;
-            public bool IsSelected { get; private set; }
+            public bool IsSelected
+            {
+                get
+                {
+                    return _isSelected && IsSelectable;
+                }
+                set
+                {
+                    _isSelected = IsSelectable && value;
+                }
+            }
 
             public event Action<long, long> MissileLaunched;
 
@@ -113,6 +124,7 @@ namespace IngameScript
                 _missilePayload = MissilePayload.Unknown;
                 Status = BayStatus.Empty;
                 _missileComputer = null;
+                Deselect();
             }
 
             private void RequestUpdate()
@@ -177,19 +189,17 @@ namespace IngameScript
                 if (IsSelected)
                 {
                     double globalTime = SystemCoordinator.GlobalTime;
-                    if (!_missileComputer.TryRun("LAUNCH " + globalTime)) return;
+                    if (!_missileComputer?.TryRun("LAUNCH " + globalTime) ?? true) return;
                     Status = BayStatus.Launching;
                     _attachment.Detach();
+                    Deselect();
                     MissileLaunched?.Invoke(_missileAddress, targetID);
                 }
             }
 
             public void Select()
             {
-                if (IsSelectable)
-                {
-                    IsSelected = true;
-                }
+                IsSelected = true;
             }
 
             public void Deselect()

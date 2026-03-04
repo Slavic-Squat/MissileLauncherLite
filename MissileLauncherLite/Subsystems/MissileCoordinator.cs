@@ -210,14 +210,15 @@ namespace IngameScript
             public void LaunchMissile(long targetID)
             {
                 if (IsLaunching) return;
-                var bayId = _orderedBays.First(id => _missileBays[id].IsSelected);
+                var bayId = _orderedBays.FirstOrDefault(id => _missileBays[id].IsSelected);
+                if (bayId == null) return;
                 var bay = _missileBays[bayId];
                 LaunchMissile(bay, targetID);
             }
 
             private void LaunchMissile(MissileBay bay, long targetID)
             {
-                if ((SystemTime - _lastLaunchTime) < 1f || !bay.IsSelected) return;
+                if (bay == null || targetID == 0 || (SystemTime - _lastLaunchTime) < 1f || !bay.IsSelected) return;
 
                 bay.Launch(targetID);
                 _lastLaunchTime = SystemTime;
