@@ -48,7 +48,7 @@ namespace IngameScript
                 {
                     return _isSelected && IsSelectable;
                 }
-                set
+                private set
                 {
                     _isSelected = IsSelectable && value;
                 }
