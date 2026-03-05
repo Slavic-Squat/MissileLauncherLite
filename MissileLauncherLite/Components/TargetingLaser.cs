@@ -242,7 +242,7 @@ namespace IngameScript
                     _target = target;
                     TargetAquired = false;
                 }
-                else
+                else if (target.TimeRecorded > _target.TimeRecorded)
                 {
                     _lastTarget = _target;
                     _target = _target.Merge(target);
