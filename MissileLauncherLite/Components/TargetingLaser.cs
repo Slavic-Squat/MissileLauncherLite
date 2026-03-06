@@ -236,6 +236,10 @@ namespace IngameScript
 
             public void SetTarget(EntityInfoExt target)
             {
+                if (!target.IsValid)
+                {
+                    return;
+                }
                 if (target.EntityID != _target.EntityID)
                 {
                     _lastTarget = default(EntityInfoExt);
