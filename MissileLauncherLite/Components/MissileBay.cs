@@ -31,9 +31,6 @@ namespace IngameScript
             private double _timeLastUpdate;
             private double _lastRunTime;
             private bool _isSelected;
-
-            private MissileType _missileType = MissileType.Unknown;
-            private MissileGuidanceType _missileGuidanceType = MissileGuidanceType.Unknown;
             private MissilePayload _missilePayload = MissilePayload.Unknown;
             private MissileStage _missileStage = MissileStage.Unknown;
             private long _missileAddress = -1;
@@ -71,7 +68,7 @@ namespace IngameScript
                     throw new Exception($"No attachment found for Missile Bay {ID}!");
                 }
 
-                CommandHandlerInst.RegisterCommand("HANDSHAKE_BAY_" + ID, (args) => { if (args.Length > 3) { ReceiveHandshake(args[0], args[1], args[2], args[3]); } });
+                CommandHandlerInst.RegisterCommand("HANDSHAKE_BAY_" + ID, (args) => { if (args.Length > 1) { ReceiveHandshake(args[0], args[1]); } });
                 CommandHandlerInst.RegisterCommand("UPDATE_BAY_" + ID, (args) => { if (args.Length > 0) { ReceiveUpdate(args[0]); } });
             }
 
@@ -104,13 +101,11 @@ namespace IngameScript
                 }
             }
 
-            private void ReceiveHandshake(string missileAddressStr, string typeStr, string guidanceStr, string payloadStr)
+            private void ReceiveHandshake(string missileAddressStr, string payloadStr)
             {
                 long missileAddress;
                 if (!long.TryParse(missileAddressStr, out missileAddress)) return;
                 _missileAddress = missileAddress;
-                _missileType = MissileEnumHelper.GetMissileType(typeStr);
-                _missileGuidanceType = MissileEnumHelper.GetMissileGuidanceType(guidanceStr);
                 _missilePayload = MissileEnumHelper.GetMissilePayload(payloadStr);
 
                 Status = BayStatus.Building;
@@ -119,8 +114,6 @@ namespace IngameScript
             private void ForgetMissile()
             {
                 _missileAddress = -1;
-                _missileType = MissileType.Unknown;
-                _missileGuidanceType = MissileGuidanceType.Unknown;
                 _missilePayload = MissilePayload.Unknown;
                 Status = BayStatus.Empty;
                 _missileComputer = null;
@@ -223,8 +216,6 @@ namespace IngameScript
             {
                 sb.Append("[BAY ").Append(ID).AppendLine("]");
                 sb.Append("  STATUS: ").AppendLine(MiscEnumHelper.GetBayStatusStr(Status));
-                sb.Append("  MISL TYPE: ").AppendLine(MissileEnumHelper.GetMissileTypeStr(_missileType));
-                sb.Append("  MISL GUIDANCE: ").AppendLine(MissileEnumHelper.GetMissileGuidanceStr(_missileGuidanceType));
                 sb.Append("  MISL PAYLOAD: ").Append(MissileEnumHelper.GetMissilePayloadStr(_missilePayload));
             }
 
@@ -245,24 +236,6 @@ namespace IngameScript
 
                 }
                 sb.Append("[").Append(ID).Append("]: ").Append(MissileEnumHelper.GetMissilePayloadStr(_missilePayload));
-            }
-
-            public void AppendTypeShort(StringBuilder sb)
-            {
-                if (IsSelected)
-                {
-                    sb.Append("-");
-                }
-                sb.Append("[").Append(ID).Append("]: ").Append(MissileEnumHelper.GetMissileTypeStr(_missileType));
-            }
-
-            public void AppendGuidanceShort(StringBuilder sb)
-            {
-                if (IsSelected)
-                {
-                    sb.Append("-");
-                }
-                sb.Append("[").Append(ID).Append("]: ").Append(MissileEnumHelper.GetMissileGuidanceStr(_missileGuidanceType));
             }
         }
     }

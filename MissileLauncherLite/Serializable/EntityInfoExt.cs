@@ -107,7 +107,6 @@ namespace IngameScript
                 {
                     var missileInfo = Info.MissileInfo;
                     sb.AppendLine();
-                    sb.Append("  MISL TYPE: ").AppendLine(MissileEnumHelper.GetMissileTypeStr(missileInfo.Type));
                     sb.Append("  PAYLOAD: ").AppendLine(MissileEnumHelper.GetMissilePayloadStr(missileInfo.Payload));
                     sb.Append("  STAGE: ").Append(MissileEnumHelper.GetMissileStageStr(missileInfo.Stage));
                 }

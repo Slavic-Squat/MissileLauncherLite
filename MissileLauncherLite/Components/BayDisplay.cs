@@ -32,7 +32,7 @@ namespace IngameScript
             private int _pageCount;
             private string _pageStr;
             private int _displayMode = 0;
-            private int _displayModes = 4;
+            private int _displayModes = 2;
             private string _displayModeStr;
             private int _rows = 10;
             private int _columns = 2;
@@ -128,14 +128,6 @@ namespace IngameScript
                     case 1: 
                         _bayStrGetter = (bay, sb) => bay.AppendPayloadShort(sb);
                         _displayModeStr = "PAYLOAD";
-                        break;
-                    case 2: 
-                        _bayStrGetter = (bay, sb) => bay.AppendTypeShort(sb);
-                        _displayModeStr = "TYPE";
-                        break;
-                    case 3: 
-                        _bayStrGetter = (bay, sb) => bay.AppendGuidanceShort(sb);
-                        _displayModeStr = "GUIDANCE";
                         break;
                     default: 
                         _bayStrGetter = (bay, sb) => bay.AppendStatusShort(sb);
