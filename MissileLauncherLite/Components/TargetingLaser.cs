@@ -29,6 +29,8 @@ namespace IngameScript
             private Rotor _elevationRotor;
             private CameraArray _cameraArray;
             private IMyCameraBlock _referenceCamera;
+            private IMyRemoteControl _controller;
+            private UserInput _userInput;
 
             private EntityInfoExt _lastTarget;
             private EntityInfoExt _target;
@@ -64,11 +66,12 @@ namespace IngameScript
             public EntityInfoExt Target => _target;
             public bool TargetAquired { get; private set; }
             public event Action<EntityInfoExt> OnTargetUpdated;
+            public event Action<EntityInfoExt> OnTargetAquired;
+            public event Action RequestUnlock;
 
-            public TargetingLaser(string id, bool isStatic, bool isAuxiliary)
+            public TargetingLaser(string id, bool isAuxiliary)
             {
                 ID = id.ToUpper();
-                _isStatic = isStatic;
                 _isAuxiliary = isAuxiliary;
                 Init();
             }
@@ -81,6 +84,8 @@ namespace IngameScript
                 Config.Set($"Laser {ID} Config", "Sensitivity", _sensitivity);
                 _countThreshold = Config.Get($"Laser {ID} Config", "CountThreshold").ToInt32(2);
                 Config.Set($"Laser {ID} Config", "CountThreshold", _countThreshold);
+                _isStatic = Config.Get($"Laser {ID} Config", "IsStatic").ToBoolean(false);
+                Config.Set($"Laser {ID} Config", "IsStatic", _isStatic);
 
                 if (!_isStatic)
                 {
@@ -124,6 +129,13 @@ namespace IngameScript
                 _cameraArray = new CameraArray($"LASER {ID}", _maxRaycastDistance * 1.1f);
                 _cameraArray.AddCamera(_referenceCamera);
 
+                _controller = AllBlocks.FirstOrDefault(b => b is IMyRemoteControl && b.CustomName.ToUpper().Contains($"LASER {ID} CONTROLLER")) as IMyRemoteControl;
+                if (_controller == null)
+                {
+                    throw new Exception($"Controller for Laser {ID} not found!");
+                }
+                _userInput = new UserInput(_controller);
+
                 MePb.CustomData = Config.ToString();
             }
 
@@ -137,14 +149,31 @@ namespace IngameScript
 
                 _referenceMatrix = _referenceCamera.WorldMatrix;
 
-                if (!TargetSet && !_isStatic)
+                _userInput.Run(time);
+                if (_userInput.CPress && !_isAuxiliary)
+                {
+                    RequestUnlock?.Invoke();
+                }
+
+                if (TargetSet)
+                {
+                    AutoTrack(time);
+                }
+                else if (!_isStatic && !_controller.IsUnderControl)
                 {
                     Vector3D vectorToAimAt = SystemCoordinator.ReferencePosition + SystemCoordinator.ReferenceWorldMatrix.Forward * 5000;
                     AimAt(vectorToAimAt, time);
                 }
-                else if (TargetSet)
+                else
                 {
-                    AutoTrack(time);
+                    if (_userInput.SpacePress && !_isAuxiliary)
+                    {
+                        FireLaser();
+                    }
+                    if (!_isStatic)
+                    {
+                        MoveLaser(-_userInput.MouseInput.Y, -_userInput.MouseInput.X);
+                    }
                 }
                 _lastRunTime = time;
             }
@@ -214,15 +243,22 @@ namespace IngameScript
                             _lastTarget = _target;
                             _target = new EntityInfoExt(raycastResult, globalTime);
                             TargetAquired = true;
-                            OnTargetUpdated?.Invoke(_target);
+                            OnTargetAquired?.Invoke(_target);
                         }
                     }
                     else if (raycastResult.EntityId == _target.EntityID)
                     {
                         _lastTarget = _target;
                         _target = new EntityInfoExt(raycastResult, globalTime);
-                        TargetAquired = true;
-                        OnTargetUpdated?.Invoke(_target);
+                        if (!TargetAquired)
+                        {
+                            TargetAquired = true;
+                            OnTargetAquired?.Invoke(_target);
+                        }
+                        else
+                        {
+                            OnTargetUpdated?.Invoke(_target);
+                        }
                     }
                 }
             }

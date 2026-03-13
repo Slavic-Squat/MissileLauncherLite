@@ -82,6 +82,16 @@ namespace IngameScript
             {
                 _bayDisplay.CycleDisplayMode();
             }
+
+            public void StartHUDSearch()
+            {
+                _hud.StartSearch();
+            }
+
+            public void StopHUDSearch()
+            {
+                _hud.StopSearch();
+            }
         }
     }
 }

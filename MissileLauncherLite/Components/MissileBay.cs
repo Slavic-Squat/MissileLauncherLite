@@ -26,10 +26,14 @@ namespace IngameScript
         public class MissileBay
         {
             private IMyProgrammableBlock _missileComputer;
-            private IMyMechanicalConnectionBlock _attachment;
+            private IMyShipConnector _attachment;
+            private IMyShipMergeBlock _mergeBlock;
+            private IMyProjector _projector;
+            private bool _printMode = false;
             private double _timeSinceLastHandshake;
-            private double _timeLastUpdate;
             private double _lastRunTime;
+            private double _lastUpdateTime;
+            private double _lastLaunchTime;
             private bool _isSelected;
             private MissilePayload _missilePayload = MissilePayload.Unknown;
             private MissileStage _missileStage = MissileStage.Unknown;
@@ -38,16 +42,15 @@ namespace IngameScript
 
             public string ID { get; private set; }
             public BayStatus Status { get; private set; } = BayStatus.Empty;
-            public bool IsSelectable => Status == BayStatus.Ready;
             public bool IsSelected
             {
                 get
                 {
-                    return _isSelected && IsSelectable;
+                    return _isSelected;
                 }
                 private set
                 {
-                    _isSelected = IsSelectable && value;
+                    _isSelected = value;
                 }
             }
 
@@ -62,10 +65,28 @@ namespace IngameScript
 
             private void Init()
             {
-                _attachment = AllBlocks.FirstOrDefault(b => b is IMyMechanicalConnectionBlock && b.CustomName.ToUpper().Contains($"MISSILE BAY {ID} ATTACHMENT")) as IMyMechanicalConnectionBlock;
+                _attachment = AllBlocks.FirstOrDefault(b => b is IMyShipConnector && b.CustomName.ToUpper().Contains($"MISSILE BAY {ID} CONNECTOR")) as IMyShipConnector;
                 if (_attachment == null)
                 {
-                    throw new Exception($"No attachment found for Missile Bay {ID}!");
+                    throw new Exception($"No connector found for Missile Bay {ID}!");
+                }
+
+                _printMode = Config.Get($"Missile Bay {ID} Config", "PrintMode").ToBoolean(false);
+                Config.Set($"Missile Bay {ID} Config", "PrintMode", _printMode);
+
+                _mergeBlock = AllBlocks.FirstOrDefault(b => b is IMyShipMergeBlock && b.CustomName.ToUpper().Contains($"MISSILE BAY {ID} MERGE")) as IMyShipMergeBlock;
+                if (_mergeBlock == null)
+                {
+                    throw new Exception($"No merge block found for Missile Bay {ID} in print mode!");
+                }
+
+                if (_printMode)
+                {
+                    _projector = AllBlocks.FirstOrDefault(b => b is IMyProjector && b.CustomName.ToUpper().Contains($"MISSILE BAY {ID} PROJECTOR")) as IMyProjector;
+                    if (_projector == null)
+                    {
+                        throw new Exception($"No projector found for Missile Bay {ID} in print mode!");
+                    }
                 }
 
                 CommandHandlerInst.RegisterCommand("HANDSHAKE_BAY_" + ID, (args) => { if (args.Length > 1) { ReceiveHandshake(args[0], args[1]); } });
@@ -74,18 +95,15 @@ namespace IngameScript
 
             private void InitHandshake()
             {
-                _timeSinceLastHandshake = SystemTime;
-
-                if (_attachment.TopGrid == null)
+                if (_attachment.OtherConnector == null)
                 {
-                    Status = BayStatus.Empty;
                     return;
                 }
+                _timeSinceLastHandshake = SystemTime;
                 List<IMyProgrammableBlock> temp = new List<IMyProgrammableBlock>();
-                GTS.GetBlocksOfType(temp, pb => pb.CubeGrid.EntityId == _attachment.TopGrid.EntityId && pb.CustomName.ToUpper().Contains("MISSILE COMPUTER"));
+                GTS.GetBlocksOfType(temp, pb => pb.CustomName.ToUpper().Contains("MISSILE COMPUTER") && pb.CustomName.ToUpper().Contains($"[BAY {ID}]"));
                 if (temp.Count == 0)
                 {
-                    Status = BayStatus.Empty;
                     return;
                 }
                 _missileComputer = temp[0];
@@ -96,7 +114,6 @@ namespace IngameScript
                 _cmdSb.Append("HANDSHAKE ").Append(ID).Append(" ").Append(IGCS.Me).Append(" ").Append(SystemCoordinator.SelfID);
                 if (!_missileComputer.TryRun(_cmdSb.ToString()))
                 {
-                    Status = BayStatus.Empty;
                     return;
                 }
             }
@@ -117,12 +134,11 @@ namespace IngameScript
                 _missilePayload = MissilePayload.Unknown;
                 Status = BayStatus.Empty;
                 _missileComputer = null;
-                Deselect();
             }
 
             private void RequestUpdate()
             {
-                _timeLastUpdate = SystemTime;
+                _lastUpdateTime = SystemTime;
                 if (_missileComputer == null)
                 {
                     Status = BayStatus.Empty;
@@ -162,47 +178,93 @@ namespace IngameScript
                     return;
                 }
 
-                if (Status == BayStatus.Empty && (time - _timeSinceLastHandshake) > 5f && _attachment.TopGrid != null)
-                {
-                    InitHandshake();
-                }
-                else if (Status != BayStatus.Empty && (time - _timeLastUpdate) > 1f)
-                {
-                    RequestUpdate();
-                }
-                else if (Status != BayStatus.Empty && _attachment.TopGrid == null)
+                if (Status > BayStatus.Projecting && !_attachment.IsConnected)
                 {
                     ForgetMissile();
+                }
+                
+                switch (Status)
+                {
+                    case BayStatus.Empty:
+                        if ((time - _lastLaunchTime) < 1f)
+                        {
+                            return;
+                        }
+                        if (_printMode)
+                        {
+                            _projector.Enabled = true;
+                            _mergeBlock.Enabled = true;
+                            Status = BayStatus.Projecting;
+                        }
+                        else
+                        {
+                            if (_attachment.Status == MyShipConnectorStatus.Connectable)
+                            {
+                                _attachment.Connect();
+                            }
+                            if (_attachment.IsConnected)
+                            {
+                                //_mergeBlock.Enabled = false;
+                                Status = BayStatus.Handshake;
+                            }
+                        }
+                        break;
+                    case BayStatus.Projecting:
+                        if (_attachment.Status == MyShipConnectorStatus.Connectable)
+                        {
+                            _attachment.Connect();
+                        }
+                        if (_projector.RemainingBlocks <= 0 && _attachment.IsConnected)
+                        {
+                            _projector.Enabled = false;
+                            //_mergeBlock.Enabled = false;
+                            Status = BayStatus.Handshake;
+                        }
+                        break;
+                    case BayStatus.Handshake:
+                        if ((time - _timeSinceLastHandshake) > 5f)
+                        {
+                            InitHandshake();
+                        }
+                        break;
+                    default:
+                        break;
+                }
+
+                if (Status > BayStatus.Handshake)
+                {
+                    if (time - _lastUpdateTime > 1f)
+                    {
+                        RequestUpdate();
+                    }
                 }
                 _lastRunTime = time;
             }
 
             public void Launch(long targetID)
             {
-                if (IsSelected)
+                if (_isSelected && Status == BayStatus.Ready)
                 {
                     double globalTime = SystemCoordinator.GlobalTime;
                     if (!_missileComputer?.TryRun("LAUNCH " + globalTime) ?? true) return;
-                    Status = BayStatus.Launching;
-                    _attachment.Detach();
-                    Deselect();
+                    _lastLaunchTime = SystemTime;
                     MissileLaunched?.Invoke(_missileAddress, targetID);
                 }
             }
 
             public void Select()
             {
-                IsSelected = true;
+                _isSelected = true;
             }
 
             public void Deselect()
             {
-                IsSelected = false;
+                _isSelected = false;
             }
 
             public void Toggle()
             {
-                if (IsSelected)
+                if (_isSelected)
                 {
                     Deselect();
                 }
@@ -221,7 +283,7 @@ namespace IngameScript
 
             public void AppendStatusShort(StringBuilder sb)
             {
-                if (IsSelected)
+                if (_isSelected)
                 {
                     sb.Append("-");
                 }
@@ -230,7 +292,7 @@ namespace IngameScript
 
             public void AppendPayloadShort(StringBuilder sb)
             {
-                if (IsSelected)
+                if (_isSelected)
                 {
                     sb.Append("-");
 

@@ -26,16 +26,15 @@ namespace IngameScript
         {
             private Dictionary<string, TargetingLaser> _targetingLasers = new Dictionary<string, TargetingLaser>();
             private TargetingLaser _spottingLaser;
-            private List<IMyLargeTurretBase> _targetingBlocks = new List<IMyLargeTurretBase>();
+            private List<IMyLargeTurretBase> _turretBlocks = new List<IMyLargeTurretBase>();
+            private List<IMyTurretControlBlock> _customTurretBlocks = new List<IMyTurretControlBlock>();
             private double _lastRunTime;
             private Dictionary<long, EntityInfoExt> _targets = new Dictionary<long, EntityInfoExt>();
             private long _lockedTargetID = -1;
             private List<long> _targetsToRemove = new List<long>();
-            private bool _searching = false;
 
             public IReadOnlyDictionary<long, EntityInfoExt> Targets => _targets;
             public long LockedTargetID => _lockedTargetID;
-            public bool Searching => _searching;
             public bool HasLockedTarget => _lockedTargetID != -1;
             public IReadOnlyDictionary<string, TargetingLaser> TargetingLasers => _targetingLasers;
 
@@ -53,15 +52,22 @@ namespace IngameScript
                 for (int i = 0; i < numLasers; i++)
                 {
                     string id = i.ToString("D2");
-                    TargetingLaser laser = new TargetingLaser(id, false, true);
+                    TargetingLaser laser = new TargetingLaser(id, true);
                     laser.OnTargetUpdated += AddTarget;
                     _targetingLasers[id] = laser;
                 }
 
-                _spottingLaser = new TargetingLaser("SPOTTER", true, false);
+                _spottingLaser = new TargetingLaser("SPOTTER", false);
                 _spottingLaser.OnTargetUpdated += AddTarget;
+                _spottingLaser.OnTargetAquired += (target) =>
+                {
+                    AddTarget(target);
+                    LockTarget(target.EntityID);
+                };
+                _spottingLaser.RequestUnlock += UnlockTarget;
 
-                _targetingBlocks = AllBlocks.Where(b => b is IMyLargeTurretBase).Cast<IMyLargeTurretBase>().ToList();
+                _turretBlocks = AllBlocks.Where(b => b is IMyLargeTurretBase).Cast<IMyLargeTurretBase>().ToList();
+                _customTurretBlocks = AllBlocks.Where(b => b is IMyTurretControlBlock).Cast<IMyTurretControlBlock>().ToList();
             }
 
             public void Run(double time)
@@ -73,16 +79,6 @@ namespace IngameScript
                 }
                 double globalTime = SystemCoordinator.GlobalTime;
 
-                if (_searching)
-                {
-                    _spottingLaser.FireLaser();
-                    if (_spottingLaser.TargetAquired)
-                    {
-                        _searching = false;
-                        LockTarget(_spottingLaser.Target.EntityID);
-                    }
-                }
-
                 EntityInfoExt lockedTarget;
                 _targets.TryGetValue(_lockedTargetID, out lockedTarget);
 
@@ -90,7 +86,6 @@ namespace IngameScript
                 {
                     _spottingLaser.SetTarget(lockedTarget);
                 }
-
                 _spottingLaser.Run(time);
 
                 foreach (var laser in _targetingLasers.Values)
@@ -102,11 +97,20 @@ namespace IngameScript
                     laser.Run(time);
                 }
 
-                foreach (var targetingBlock in _targetingBlocks)
+                foreach (var turretBlock in _turretBlocks)
                 {
-                    if (targetingBlock.HasTarget)
+                    if (turretBlock.HasTarget)
                     {
-                        MyDetectedEntityInfo detectedInfo = targetingBlock.GetTargetedEntity();
+                        MyDetectedEntityInfo detectedInfo = turretBlock.GetTargetedEntity();
+                        EntityInfoExt info = new EntityInfoExt(detectedInfo, globalTime);
+                        AddTarget(info);
+                    }
+                }
+                foreach (var turretBlock in _customTurretBlocks)
+                {
+                    if (turretBlock.HasTarget)
+                    {
+                        MyDetectedEntityInfo detectedInfo = turretBlock.GetTargetedEntity();
                         EntityInfoExt info = new EntityInfoExt(detectedInfo, globalTime);
                         AddTarget(info);
                     }
@@ -179,17 +183,6 @@ namespace IngameScript
             {
                 if (_lockedTargetID != -1) return;
                 _lockedTargetID = entityID;
-            }
-
-            public void StartSearch()
-            {
-                UnlockTarget();
-                _searching = true;
-            }
-
-            public void StopSearch()
-            {
-                _searching = false;
             }
         }
     }

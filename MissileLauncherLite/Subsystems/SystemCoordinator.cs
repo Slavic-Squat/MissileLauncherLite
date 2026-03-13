@@ -82,8 +82,6 @@ namespace IngameScript
 
                 CommunicationHandlerInst.RegisterTag("COMMANDS", true);
 
-                CommandHandlerInst.RegisterCommand("START_SEARCH", (args) => TargetCoordinator.StartSearch());
-                CommandHandlerInst.RegisterCommand("STOP_SEARCH", (args) => TargetCoordinator.StopSearch());
                 CommandHandlerInst.RegisterCommand("UNLOCK_TARGET", (args) => TargetCoordinator.UnlockTarget());
                 CommandHandlerInst.RegisterCommand("CYCLE_FLIGHT_CTRL", (args) => FlightControl.CycleFlightControlMode());
                 CommandHandlerInst.RegisterCommand("TOGGLE_BAYS", (args) => MissileCoordinator.ToggleBays(args));
@@ -94,6 +92,8 @@ namespace IngameScript
                 CommandHandlerInst.RegisterCommand("ABORT", (args) => MissileCoordinator.AbortAll());
                 CommandHandlerInst.RegisterCommand("CYLCE_PAGE", (args) => UICoordinator.CyclePage());
                 CommandHandlerInst.RegisterCommand("CYCLE_DISPLAY_MODE", (args) => UICoordinator.CycleDisplayMode());
+                CommandHandlerInst.RegisterCommand("START_HUD_SEARCH", (args) => UICoordinator.StartHUDSearch());
+                CommandHandlerInst.RegisterCommand("STOP_HUD_SEARCH", (args) => UICoordinator.StopHUDSearch());
             }
 
             public void Run(double time)

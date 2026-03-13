@@ -42,7 +42,7 @@ namespace IngameScript
             public IReadOnlyList<string> OrderedBays => _orderedBays;
             public int NumBays { get; private set; }
             public int NumSelectedBays => _missileBays.Count(bay => bay.Value.IsSelected);
-            public int NumReadyBays => _missileBays.Count(bay => bay.Value.IsSelectable);
+            public int NumReadyBays => _missileBays.Count(bay => bay.Value.Status == BayStatus.Ready);
             public bool IsLaunching => _launchCoroutine != null;
             public int NumMissiles => _addressTargetIDMap.Count;
 
@@ -210,7 +210,7 @@ namespace IngameScript
             public void LaunchMissile(long targetID)
             {
                 if (IsLaunching) return;
-                var bayId = _orderedBays.FirstOrDefault(id => _missileBays[id].IsSelected);
+                var bayId = _orderedBays.FirstOrDefault(id => _missileBays[id].IsSelected && _missileBays[id].Status == BayStatus.Ready);
                 if (bayId == null) return;
                 var bay = _missileBays[bayId];
                 LaunchMissile(bay, targetID);
@@ -218,7 +218,7 @@ namespace IngameScript
 
             private void LaunchMissile(MissileBay bay, long targetID)
             {
-                if (bay == null || targetID == 0 || (SystemTime - _lastLaunchTime) < 1f || !bay.IsSelected) return;
+                if (bay == null || targetID == 0 || (SystemTime - _lastLaunchTime) < 1f || !bay.IsSelected || bay.Status != BayStatus.Ready) return;
 
                 bay.Launch(targetID);
                 _lastLaunchTime = SystemTime;

@@ -24,7 +24,7 @@ namespace IngameScript
     {
         public enum BayStatus : byte
         {
-            Empty, Building, Fueling, Ready, Launching
+            Empty, Projecting, Handshake, Building, Fueling, Ready, Launching
         }
         public enum Direction
         {
@@ -53,6 +53,8 @@ namespace IngameScript
                 switch (status)
                 {
                     case BayStatus.Empty: return "EMPTY";
+                    case BayStatus.Projecting: return "PROJECTING";
+                    case BayStatus.Handshake: return "HANDSHAKE";
                     case BayStatus.Building: return "BUILDING";
                     case BayStatus.Fueling: return "FUELING";
                     case BayStatus.Ready: return "READY";
@@ -66,6 +68,8 @@ namespace IngameScript
                 switch (status)
                 {
                     case BayStatus.Empty: return "EMPTY";
+                    case BayStatus.Projecting: return "PROJ";
+                    case BayStatus.Handshake: return "HNDSHK";
                     case BayStatus.Building: return "BLD";
                     case BayStatus.Fueling: return "FUEL";
                     case BayStatus.Ready: return "RDY";

@@ -89,7 +89,6 @@ namespace IngameScript
                 _allSprites.Clear();
                 var entities = _uiCoordinator.AllEntities;
                 long targetId = _uiCoordinator.TargetCoordinator.LockedTargetID;
-                bool searching = _uiCoordinator.TargetCoordinator.Searching;
                 var missileBays = _uiCoordinator.MissileBays;
 
                 _targetingHUDSpriteBuilder.BuildSprites(entities, targetedID: targetId);
@@ -106,14 +105,9 @@ namespace IngameScript
                     }
                     else
                     {
+                        _searchingCoroutine.Dispose();
                         _searchingCoroutine = null;
                     }
-                }
-                else if (searching)
-                {
-                    _searchingCoroutine = SearchingCoroutine();
-                    _searchingCoroutine.MoveNext();
-                    _allSprites.Add(_searchingCoroutine.Current);
                 }
 
                 _sb.Clear();
@@ -158,7 +152,7 @@ namespace IngameScript
                     Alignment = TextAlignment.CENTER
                 };
 
-                while (_uiCoordinator.TargetCoordinator.Searching)
+                while (true)
                 {
                     var entitySprites = _targetingHUDSpriteBuilder.EntitySprites;
                     float minDistance = maxDistance;
@@ -176,9 +170,7 @@ namespace IngameScript
                     if (entity.IsValid)
                     {
                         _uiCoordinator.TargetCoordinator.LockTarget(entity.EntityID);
-                        temp.Color = new Color(Color.GreenYellow, _opacity);
-                        yieldCounter++;
-                        yield return new MySpriteExt(temp, 0.01f);
+                        break;
                     }
                     else if (yieldCounter % 24 < 12)
                     {
@@ -192,6 +184,21 @@ namespace IngameScript
                         yield return new MySpriteExt();
                     }
                 }
+
+                temp.Color = new Color(Color.GreenYellow, _opacity);
+                yieldCounter++;
+                yield return new MySpriteExt(temp, 0.01f);
+            }
+
+            public void StartSearch()
+            {
+                _searchingCoroutine = SearchingCoroutine();
+            }
+
+            public void StopSearch()
+            {
+                _searchingCoroutine.Dispose();
+                _searchingCoroutine = null;
             }
         }
     }
