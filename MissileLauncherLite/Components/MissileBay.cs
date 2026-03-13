@@ -29,7 +29,7 @@ namespace IngameScript
             private IMyShipConnector _attachment;
             private IMyShipMergeBlock _mergeBlock;
             private IMyProjector _projector;
-            private bool _printMode = false;
+            private PrintMode _printMode;
             private double _timeSinceLastHandshake;
             private double _lastRunTime;
             private double _lastUpdateTime;
@@ -71,8 +71,8 @@ namespace IngameScript
                     throw new Exception($"No connector found for Missile Bay {ID}!");
                 }
 
-                _printMode = Config.Get($"Missile Bay {ID} Config", "PrintMode").ToBoolean(false);
-                Config.Set($"Missile Bay {ID} Config", "PrintMode", _printMode);
+                _printMode = MiscEnumHelper.GetPrintMode(Config.Get($"Missile Bay {ID} Config", "PrintMode").ToString("DISABLED"));
+                Config.Set($"Missile Bay {ID} Config", "PrintMode", MiscEnumHelper.GetPrintModeStr(_printMode));
 
                 _mergeBlock = AllBlocks.FirstOrDefault(b => b is IMyShipMergeBlock && b.CustomName.ToUpper().Contains($"MISSILE BAY {ID} MERGE")) as IMyShipMergeBlock;
                 if (_mergeBlock == null)
@@ -80,12 +80,17 @@ namespace IngameScript
                     throw new Exception($"No merge block found for Missile Bay {ID} in print mode!");
                 }
 
-                if (_printMode)
+                if (_printMode != PrintMode.Disabled)
                 {
                     _projector = AllBlocks.FirstOrDefault(b => b is IMyProjector && b.CustomName.ToUpper().Contains($"MISSILE BAY {ID} PROJECTOR")) as IMyProjector;
                     if (_projector == null)
                     {
                         throw new Exception($"No projector found for Missile Bay {ID} in print mode!");
+                    }
+
+                    if (_printMode == PrintMode.Manual)
+                    {
+                        _projector.Enabled = false;
                     }
                 }
 
@@ -95,10 +100,6 @@ namespace IngameScript
 
             private void InitHandshake()
             {
-                if (_attachment.OtherConnector == null)
-                {
-                    return;
-                }
                 _timeSinceLastHandshake = SystemTime;
                 List<IMyProgrammableBlock> temp = new List<IMyProgrammableBlock>();
                 GTS.GetBlocksOfType(temp, pb => pb.CustomName.ToUpper().Contains("MISSILE COMPUTER") && pb.CustomName.ToUpper().Contains($"[BAY {ID}]"));
@@ -120,6 +121,10 @@ namespace IngameScript
 
             private void ReceiveHandshake(string missileAddressStr, string payloadStr)
             {
+                if (_attachment.Status == MyShipConnectorStatus.Unconnected)
+                {
+                    return;
+                }
                 long missileAddress;
                 if (!long.TryParse(missileAddressStr, out missileAddress)) return;
                 _missileAddress = missileAddress;
@@ -139,9 +144,8 @@ namespace IngameScript
             private void RequestUpdate()
             {
                 _lastUpdateTime = SystemTime;
-                if (_missileComputer == null)
+                if (_missileComputer == null || _attachment.Status == MyShipConnectorStatus.Unconnected)
                 {
-                    Status = BayStatus.Empty;
                     return;
                 }
                 _cmdSb.Clear();
@@ -151,6 +155,10 @@ namespace IngameScript
 
             public void ReceiveUpdate(string stageStr)
             {
+                if (_attachment.Status == MyShipConnectorStatus.Unconnected)
+                {
+                    return;
+                }
                 _missileStage = MissileEnumHelper.GetMissileStage(stageStr);
 
                 switch (_missileStage)
@@ -178,7 +186,7 @@ namespace IngameScript
                     return;
                 }
 
-                if (Status > BayStatus.Projecting && !_attachment.IsConnected)
+                if (Status > BayStatus.Projecting && _attachment.Status == MyShipConnectorStatus.Unconnected)
                 {
                     ForgetMissile();
                 }
@@ -190,34 +198,20 @@ namespace IngameScript
                         {
                             return;
                         }
-                        if (_printMode)
+                        if (_printMode == PrintMode.Auto)
                         {
                             _projector.Enabled = true;
-                            _mergeBlock.Enabled = true;
                             Status = BayStatus.Projecting;
                         }
-                        else
+                        else if (_attachment.Status != MyShipConnectorStatus.Unconnected)
                         {
-                            if (_attachment.Status == MyShipConnectorStatus.Connectable)
-                            {
-                                _attachment.Connect();
-                            }
-                            if (_attachment.IsConnected)
-                            {
-                                //_mergeBlock.Enabled = false;
-                                Status = BayStatus.Handshake;
-                            }
+                            Status = BayStatus.Handshake;
                         }
                         break;
                     case BayStatus.Projecting:
-                        if (_attachment.Status == MyShipConnectorStatus.Connectable)
-                        {
-                            _attachment.Connect();
-                        }
-                        if (_projector.RemainingBlocks <= 0 && _attachment.IsConnected)
+                        if (_projector.RemainingBlocks <= 0 && _attachment.Status != MyShipConnectorStatus.Unconnected)
                         {
                             _projector.Enabled = false;
-                            //_mergeBlock.Enabled = false;
                             Status = BayStatus.Handshake;
                         }
                         break;
@@ -226,6 +220,18 @@ namespace IngameScript
                         {
                             InitHandshake();
                         }
+                        break;
+                    case BayStatus.Building:
+                        break;
+                    case BayStatus.Fueling:
+                        if (_attachment.Status == MyShipConnectorStatus.Connectable)
+                        {
+                            _attachment.Connect();
+                        }
+                        break;
+                    case BayStatus.Ready:
+                        break;
+                    case BayStatus.Launching:
                         break;
                     default:
                         break;
@@ -271,6 +277,24 @@ namespace IngameScript
                 else
                 {
                     Select();
+                }
+            }
+
+            public void StartPrinting()
+            {
+                if (_printMode == PrintMode.Manual && Status == BayStatus.Empty)
+                {
+                    _projector.Enabled = true;
+                    Status = BayStatus.Projecting;
+                }
+            }
+
+            public void StopPrinting()
+            {
+                if (_printMode == PrintMode.Manual && Status == BayStatus.Projecting)
+                {
+                    _projector.Enabled = false;
+                    Status = BayStatus.Empty;
                 }
             }
 

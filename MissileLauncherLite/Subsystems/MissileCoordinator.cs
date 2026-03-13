@@ -329,6 +329,42 @@ namespace IngameScript
                     }
                 }
             }
+
+            public void StartPrinting(params string[] bayIDs)
+            {
+                foreach (string bayID in bayIDs)
+                {
+                    MissileBay bay;
+                    if (!_missileBays.TryGetValue(bayID, out bay)) return;
+                    bay.StartPrinting();
+                }
+            }
+
+            public void StopPrinting(params string[] bayIDs)
+            {
+                foreach (string bayID in bayIDs)
+                {
+                    MissileBay bay;
+                    if (!_missileBays.TryGetValue(bayID, out bay)) return;
+                    bay.StopPrinting();
+                }
+            }
+
+            public void StartPrintingAll()
+            {
+                foreach (var bay in _missileBays.Values)
+                {
+                    bay.StartPrinting();
+                }
+            }
+
+            public void StopPrintingAll()
+            {
+                foreach (var bay in _missileBays.Values)
+                {
+                    bay.StopPrinting();
+                }
+            }
         }
     }
 }

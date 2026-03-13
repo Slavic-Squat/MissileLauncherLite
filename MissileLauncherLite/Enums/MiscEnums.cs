@@ -26,6 +26,11 @@ namespace IngameScript
         {
             Empty, Projecting, Handshake, Building, Fueling, Ready, Launching
         }
+
+        public enum PrintMode
+        {
+            Disabled, Manual, Auto
+        }
         public enum Direction
         {
             Left, Right, Up, Down, Forward, Backward
@@ -75,6 +80,36 @@ namespace IngameScript
                     case BayStatus.Ready: return "RDY";
                     case BayStatus.Launching: return "LNCH";
                     default: return "N/A";
+                }
+            }
+
+            public static PrintMode GetPrintMode(string modeStr)
+            {
+                switch (modeStr.ToUpper())
+                {
+                    case "DISABLED":
+                        return PrintMode.Disabled;
+                    case "MANUAL":
+                        return PrintMode.Manual;
+                    case "AUTO":
+                        return PrintMode.Auto;
+                    default:
+                        return PrintMode.Disabled;
+                }
+            }
+
+            public static string GetPrintModeStr(PrintMode mode)
+            {
+                switch (mode)
+                {
+                    case PrintMode.Disabled:
+                        return "DISABLED";
+                    case PrintMode.Manual:
+                        return "MANUAL";
+                    case PrintMode.Auto:
+                        return "AUTO";
+                    default:
+                        return "DISABLED";
                 }
             }
 
