@@ -243,7 +243,7 @@ namespace IngameScript
                     if (distance > farthestDistance) farthestDistance = distance;
                 }
 
-                SetScopeScale(farthestDistance > 3000f ? 0.5f : 0.25f);
+                AdjustScopeScale((float)farthestDistance);
 
                 Vector2 rangeTextPos = _screenBounds.Position + new Vector2(10f, 10f) * _resScale;
                 MySprite rangeTextSprite = SpriteHelper.CreateText(rangeTextPos, _sb.Clear().Append(_rangeStr), Color.White, _surface, text: _rangeStr, fontID: "Monospace", scale: 1.5f * _resScale);
@@ -411,11 +411,36 @@ namespace IngameScript
                 _finalSprites.AddRange(_spritesPostPlane);
             }
 
-            private void SetScopeScale(float scale)
+            private void AdjustScopeScale(float requestedDistance)
             {
+                float scale;
+                if (requestedDistance > 15000)
+                {
+                    scale = 1.25f;
+                    _rangeStr = "15 km";
+                }
+                else if (requestedDistance > 12000)
+                {
+                    scale = 1f;
+                    _rangeStr = "12 km";
+                }
+                else if (requestedDistance > 9000)
+                {
+                    scale = 0.75f;
+                    _rangeStr = "9 km";
+                }
+                else if (requestedDistance > 6000)
+                {
+                    scale = 0.5f;
+                    _rangeStr = "6 km";
+                }
+                else
+                {
+                    scale = 0.25f;
+                    _rangeStr = "3 km";
+                }
                 if (scale == _scopeScale) return;
                 _scopeScale = scale;
-                _rangeStr = scale == 0.5f ? "6 km" : "3 km";
                 _projectionMatrix = MatrixD.CreatePerspectiveFieldOfView(MathHelper.ToRadians(_FOV), _AR, _n * _scopeScale, _f * _scopeScale);
                 BuildStaticSprites();
             }

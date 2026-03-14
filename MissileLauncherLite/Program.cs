@@ -34,7 +34,7 @@ namespace IngameScript
 
         private static List<IMyTerminalBlock> _allBlocks = new List<IMyTerminalBlock>();
         private const string _programName = "MissileLauncherLite";
-        private const string _programVersion = "1.16";
+        private const string _programVersion = "1.17";
 
         private SystemCoordinator _systemCoordinator;
         private bool _isInitialized = false;
@@ -51,7 +51,7 @@ namespace IngameScript
             IGCS = IGC;
             RuntimeInfo = Runtime;
             MePb = Me;
-            Runtime.UpdateFrequency = UpdateFrequency.Update1;
+            Runtime.UpdateFrequency = UpdateFrequency.Once;
 
             Config = new MyIni();
             if (!Config.TryParse(MePb.CustomData))
@@ -107,6 +107,7 @@ namespace IngameScript
 
         private void Init()
         {
+            Runtime.UpdateFrequency = UpdateFrequency.None;
             _isInitialized = false;
             _lastExceptionMsg = string.Empty;
             _allBlocks.Clear();
@@ -151,6 +152,7 @@ namespace IngameScript
 
             Me.CustomData = Config.ToString();
             _isInitialized = true;
+            Runtime.UpdateFrequency = UpdateFrequency.Update1;
         }
     }
 }

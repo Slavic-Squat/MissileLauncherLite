@@ -141,8 +141,7 @@ namespace IngameScript
                     }
                 }
 
-                _range = farthestDistance > 3000 ? 6000f : 3000f;
-                _rangeStr = _range == 6000f ? "6 km" : "3 km";
+                AdjustRange((float)farthestDistance);
 
                 Vector2 rangeTextPos = _screenBounds.Position + new Vector2(10f, 10f) * _resScale;
                 MySprite rangeTextSprite = SpriteHelper.CreateText(rangeTextPos, _sb.Clear().Append(_rangeStr), Color.White, _surface, text: _rangeStr, fontID: "Monospace", scale: 1.5f * _resScale);
@@ -242,6 +241,35 @@ namespace IngameScript
                 _finalSprites.AddRange(_staticSprites);
                 _finalSprites.AddRange(_sprites);
                 _finalSprites.SortNoAlloc((a, b) => a.Depth.CompareTo(b.Depth));
+            }
+
+            private void AdjustRange(float requestedRange)
+            {
+                if (requestedRange > 15000)
+                {
+                    _range = 15000f;
+                    _rangeStr = "15 km";
+                }
+                else if (requestedRange > 12000)
+                {
+                    _range = 12000f;
+                    _rangeStr = "12 km";
+                }
+                else if (requestedRange > 9000)
+                {
+                    _range = 9000f;
+                    _rangeStr = "9 km";
+                }
+                else if (requestedRange > 6000)
+                {
+                    _range = 6000f;
+                    _rangeStr = "6 km";
+                }
+                else
+                {
+                    _range = 3000f;
+                    _rangeStr = "3 km";
+                }
             }
         }
     }
