@@ -140,8 +140,9 @@ namespace IngameScript
             public void AppendStatus(StringBuilder sb)
             {
                 sb.AppendLine("[TURRETS]");
-                sb.Append("  STATUS: ").AppendLine(_enabled ? "  ENABLED" : "  DISABLED");
-                sb.Append("  TRGT GRP: ").AppendLine(_targetingGroupDisplayNames[_targetingGroupIndex]);
+                sb.AppendLine("---------------");
+                sb.Append(" STATUS: ").AppendLine(_enabled ? "  ENABLED" : "  DISABLED");
+                sb.Append("  FOCUS: ").AppendLine(_targetingGroupDisplayNames[_targetingGroupIndex]);
                 sb.Append("  NTRLS: ").Append(_targetNeutrals ? "YES" : "NO");
             }
         }
