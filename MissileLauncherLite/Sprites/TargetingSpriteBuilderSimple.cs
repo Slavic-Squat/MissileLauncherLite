@@ -245,22 +245,22 @@ namespace IngameScript
 
             private void AdjustRange(float requestedRange)
             {
-                if (requestedRange > 15000)
+                if (requestedRange > 12000)
                 {
                     _range = 15000f;
                     _rangeStr = "15 km";
                 }
-                else if (requestedRange > 12000)
+                else if (requestedRange > 9000)
                 {
                     _range = 12000f;
                     _rangeStr = "12 km";
                 }
-                else if (requestedRange > 9000)
+                else if (requestedRange > 6000)
                 {
                     _range = 9000f;
                     _rangeStr = "9 km";
                 }
-                else if (requestedRange > 6000)
+                else if (requestedRange > 3000)
                 {
                     _range = 6000f;
                     _rangeStr = "6 km";

@@ -414,22 +414,22 @@ namespace IngameScript
             private void AdjustScopeScale(float requestedDistance)
             {
                 float scale;
-                if (requestedDistance > 15000)
+                if (requestedDistance > 12000)
                 {
                     scale = 1.25f;
                     _rangeStr = "15 km";
                 }
-                else if (requestedDistance > 12000)
+                else if (requestedDistance > 9000)
                 {
                     scale = 1f;
                     _rangeStr = "12 km";
                 }
-                else if (requestedDistance > 9000)
+                else if (requestedDistance > 6000)
                 {
                     scale = 0.75f;
                     _rangeStr = "9 km";
                 }
-                else if (requestedDistance > 6000)
+                else if (requestedDistance > 3000)
                 {
                     scale = 0.5f;
                     _rangeStr = "6 km";
