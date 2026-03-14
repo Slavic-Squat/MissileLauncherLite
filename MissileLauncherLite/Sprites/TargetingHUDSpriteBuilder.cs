@@ -92,7 +92,7 @@ namespace IngameScript
                     double dist = entityPosView.Length();
                     Vector3D range = dist > 0 ? entityPosView / dist : Vector3D.Zero;
                     double closingSpeed = Vector3D.Dot(entityRelVelView, -range);
-                    double tangentialSpeed = Math.Sqrt(entityRelVelView.LengthSquared() - closingSpeed * closingSpeed);
+                    double lateralSpeed = Math.Sqrt(entityRelVelView.LengthSquared() - closingSpeed * closingSpeed);
                     entityRelVelView.Z = 0;
                     Vector3D entityVelPointView = entityPosView + entityRelVelView;
                     Vector4D entityVelPointClip = Vector4D.Transform(new Vector4D(entityVelPointView, 1), _projectionMatrix);
@@ -102,7 +102,7 @@ namespace IngameScript
                     Vector2 velPixel = entityVelPointPixel - entityPosPixel;
                     float velLengthPixel = velPixel.Length();
                     Vector2 velDirPixel = velLengthPixel > 0 ? velPixel / velLengthPixel : Vector2.Zero;
-                    velLengthPixel = MathHelper.Lerp(0, 50f * _resScale, (float)tangentialSpeed / 200f) * entityDepthScale;
+                    velLengthPixel = MathHelper.Lerp(0, 50f * _resScale, (float)lateralSpeed / 200f) * entityDepthScale;
                     velPixel = velDirPixel * velLengthPixel;
                     Vector2 velPosPixel = entityPosPixel + velPixel / 2f;
                     float velAngle = (float)Math.Atan2(-velPixel.Y, velPixel.X);
