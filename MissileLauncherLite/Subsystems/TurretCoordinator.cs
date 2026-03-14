@@ -111,7 +111,7 @@ namespace IngameScript
                 }
             }
 
-            public void CycleTargetingGroups()
+            public void CycleTargetingGroup()
             {
                 _targetingGroupIndex = (_targetingGroupIndex + 1) % _targetingGroups.Count;
                 foreach (var t in _turrets)

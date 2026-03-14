@@ -86,7 +86,9 @@ namespace IngameScript
                 CommandHandlerInst.RegisterCommand("CYCLE_FLIGHT_CTRL", (args) => FlightControl.CycleFlightControlMode());
                 CommandHandlerInst.RegisterCommand("TOGGLE_BAYS", (args) => MissileCoordinator.ToggleBays(args));
                 CommandHandlerInst.RegisterCommand("SELECT_ALL", (args) => MissileCoordinator.SelectAll());
+                CommandHandlerInst.RegisterCommand("SELECT_BAYS", (args) => MissileCoordinator.SelectBays(args));
                 CommandHandlerInst.RegisterCommand("DESELECT_ALL", (args) => MissileCoordinator.DeselectAll());
+                CommandHandlerInst.RegisterCommand("DESELECT_BAYS", (args) => MissileCoordinator.DeselectBays(args));
                 CommandHandlerInst.RegisterCommand("LAUNCH", (args) => { if (TargetCoordinator.HasLockedTarget) MissileCoordinator.LaunchMissile(TargetCoordinator.LockedTargetID); });
                 CommandHandlerInst.RegisterCommand("LAUNCH_ALL", (args) => { if (TargetCoordinator.HasLockedTarget) MissileCoordinator.LaunchMissiles(TargetCoordinator.LockedTargetID); });
                 CommandHandlerInst.RegisterCommand("ABORT", (args) => MissileCoordinator.AbortAll());
@@ -98,6 +100,9 @@ namespace IngameScript
                 CommandHandlerInst.RegisterCommand("STOP_PRINTING", (args) => MissileCoordinator.StopPrinting(args));
                 CommandHandlerInst.RegisterCommand("START_PRINTING_ALL", (args) => MissileCoordinator.StartPrintingAll());
                 CommandHandlerInst.RegisterCommand("STOP_PRINTING_ALL", (args) => MissileCoordinator.StopPrintingAll());
+                CommandHandlerInst.RegisterCommand("TOGGLE_NEUTRALS", (args) => TargetCoordinator.TurretCoordinator.ToggleNeutrals());
+                CommandHandlerInst.RegisterCommand("CYCLE_TARGETING_GROUP", (args) => TargetCoordinator.TurretCoordinator.CycleTargetingGroup());
+                CommandHandlerInst.RegisterCommand("TOGGLE_TURRETS", (args) => TargetCoordinator.TurretCoordinator.ToggleEnabled());
             }
 
             public void Run(double time)
