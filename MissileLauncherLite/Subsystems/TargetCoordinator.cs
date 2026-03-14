@@ -24,10 +24,10 @@ namespace IngameScript
     {
         public class TargetCoordinator
         {
+            private TurretCoordinator _turretCoordinator;
+            private List<EntityInfoExt> _turretTargets = new List<EntityInfoExt>();
             private Dictionary<string, TargetingLaser> _targetingLasers = new Dictionary<string, TargetingLaser>();
             private TargetingLaser _spottingLaser;
-            private List<IMyLargeTurretBase> _turretBlocks = new List<IMyLargeTurretBase>();
-            private List<IMyTurretControlBlock> _customTurretBlocks = new List<IMyTurretControlBlock>();
             private double _lastRunTime;
             private Dictionary<long, EntityInfoExt> _targets = new Dictionary<long, EntityInfoExt>();
             private long _lockedTargetID = -1;
@@ -37,6 +37,7 @@ namespace IngameScript
             public long LockedTargetID => _lockedTargetID;
             public bool HasLockedTarget => _lockedTargetID != -1;
             public IReadOnlyDictionary<string, TargetingLaser> TargetingLasers => _targetingLasers;
+            public TurretCoordinator TurretCoordinator => _turretCoordinator;
 
             public TargetCoordinator()
             {
@@ -45,6 +46,8 @@ namespace IngameScript
 
             private void Init()
             {
+                _turretCoordinator = new TurretCoordinator(Targets);
+
                 int numLasers = Config.Get("Targeting", "NumLasers").ToInt32(0);
                 Config.Set("Targeting", "NumLasers", numLasers);
                 MePb.CustomData = Config.ToString();
@@ -65,9 +68,6 @@ namespace IngameScript
                     LockTarget(target.EntityID);
                 };
                 _spottingLaser.RequestUnlock += UnlockTarget;
-
-                _turretBlocks = AllBlocks.Where(b => b is IMyLargeTurretBase).Cast<IMyLargeTurretBase>().ToList();
-                _customTurretBlocks = AllBlocks.Where(b => b is IMyTurretControlBlock).Cast<IMyTurretControlBlock>().ToList();
             }
 
             public void Run(double time)
@@ -97,23 +97,10 @@ namespace IngameScript
                     laser.Run(time);
                 }
 
-                foreach (var turretBlock in _turretBlocks)
+                _turretCoordinator.GetTurretTargets(_turretTargets);
+                foreach (var target in _turretTargets)
                 {
-                    if (turretBlock.HasTarget)
-                    {
-                        MyDetectedEntityInfo detectedInfo = turretBlock.GetTargetedEntity();
-                        EntityInfoExt info = new EntityInfoExt(detectedInfo, globalTime);
-                        AddTarget(info);
-                    }
-                }
-                foreach (var turretBlock in _customTurretBlocks)
-                {
-                    if (turretBlock.HasTarget)
-                    {
-                        MyDetectedEntityInfo detectedInfo = turretBlock.GetTargetedEntity();
-                        EntityInfoExt info = new EntityInfoExt(detectedInfo, globalTime);
-                        AddTarget(info);
-                    }
+                    AddTarget(target);
                 }
 
                 _targetsToRemove.Clear();

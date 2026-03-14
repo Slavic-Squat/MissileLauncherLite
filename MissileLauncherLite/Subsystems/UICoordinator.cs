@@ -29,6 +29,7 @@ namespace IngameScript
             private TargetingDisplays _targetingDisplays;
             private HUD _hud;
             private BayDisplay _bayDisplay;
+            private TurretDisplay _turretDisplay;
 
             public IReadOnlyDictionary<long, EntityInfoExt> Targets => _systemCoordinator.TargetCoordinator.Targets;
             public IReadOnlyDictionary<long, EntityInfoExt> MyMissiles => _systemCoordinator.MissileCoordinator.MyMissiles;
@@ -39,6 +40,7 @@ namespace IngameScript
             public IReadOnlyDictionary<string, MissileBay> MissileBays => _systemCoordinator.MissileCoordinator.MissileBays;
             public IReadOnlyList<string> OrderedBays => _systemCoordinator.MissileCoordinator.OrderedBays;
             public IReadOnlyDictionary<string, TargetingLaser> TargetingLasers => _systemCoordinator.TargetCoordinator.TargetingLasers;
+            public TurretCoordinator TurretCoordinator => _systemCoordinator.TargetCoordinator.TurretCoordinator;
 
             private int _runCounter = 0;
 
@@ -48,6 +50,7 @@ namespace IngameScript
                 _targetingDisplays = new TargetingDisplays(this);
                 _hud = new HUD(this);
                 _bayDisplay = new BayDisplay(this);
+                _turretDisplay = new TurretDisplay(this);
             }
 
             public void Run()
@@ -70,6 +73,7 @@ namespace IngameScript
                     _targetingDisplays.Draw();
                     _hud.Draw();
                     _bayDisplay.Draw();
+                    _turretDisplay.Draw();
                 }
             }
 

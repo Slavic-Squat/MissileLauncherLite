@@ -27,7 +27,7 @@ namespace IngameScript
             private Dictionary<string, MissileBay> _missileBays = new Dictionary<string, MissileBay>();
             private List<string> _orderedBays = new List<string>();
             private Dictionary<long, long> _addressTargetIDMap = new Dictionary<long, long>();
-            private IReadOnlyDictionary<long, EntityInfoExt> _targetInfo = new Dictionary<long, EntityInfoExt>();
+            private IReadOnlyDictionary<long, EntityInfoExt> _targets = new Dictionary<long, EntityInfoExt>();
             private Dictionary<long, EntityInfoExt> _myMissiles = new Dictionary<long, EntityInfoExt>();
             private IEnumerator<int> _launchCoroutine;
             private double _lastClockSyncTime;
@@ -46,9 +46,9 @@ namespace IngameScript
             public bool IsLaunching => _launchCoroutine != null;
             public int NumMissiles => _addressTargetIDMap.Count;
 
-            public MissileCoordinator(IReadOnlyDictionary<long, EntityInfoExt> targetInfo)
+            public MissileCoordinator(IReadOnlyDictionary<long, EntityInfoExt> targets)
             {
-                _targetInfo = targetInfo;
+                _targets = targets;
                 Init();
             }
 
@@ -289,11 +289,11 @@ namespace IngameScript
                     long address = kvp.Key;
                     long targetID = kvp.Value;
 
-                    if (_targetInfo.ContainsKey(targetID))
+                    if (_targets.ContainsKey(targetID))
                     {
                         int index = 0;
                         int sizeIndex = index++;
-                        int bytesWritten = _targetInfo[targetID].Info.Serialize(_targetBuffer, index);
+                        int bytesWritten = _targets[targetID].Info.Serialize(_targetBuffer, index);
                         index += bytesWritten;
                         _targetBuffer[sizeIndex] = (byte)bytesWritten;
                         if (index > 1)
