@@ -24,19 +24,16 @@ namespace IngameScript
     {
         public class TurretCoordinator
         {
-            private List<IMyLargeTurretBase> _turrets = new List<IMyLargeTurretBase>();
-            private List<IMyTurretControlBlock> _customTurrets = new List<IMyTurretControlBlock>();
+            private List<ITurret> _turrets = new List<ITurret>();
 
             private IReadOnlyDictionary<long, EntityInfoExt> _targets = new Dictionary<long, EntityInfoExt>();
 
-            private bool _targetNeutrals = false;
+            private bool _targetNeutral = false;
             private bool _enabled = true;
 
-            private List<string> _targetingGroups = new List<string>() { "Default" };
-            private List<string> _targetingGroupDisplayNames = new List<string>();
+            private List<string> _targetingGroups = new List<string>() { "Default", "Weapons", "PowerSystems", "Propulsion"};
+            private List<string> _targetingGroupDisplayNames = new List<string>() { "DEFAULT", "WEAPONS", "POWER", "PROPULSION"};
             private int _targetingGroupIndex = 0;
-
-            private StringBuilder _sb = new StringBuilder();
             public TurretCoordinator(IReadOnlyDictionary<long, EntityInfoExt> targets)
             {
                 _targets = targets;
@@ -45,32 +42,25 @@ namespace IngameScript
 
             private void Init()
             {
-                _turrets = AllBlocks.Where(b => b is IMyLargeTurretBase).Cast<IMyLargeTurretBase>().ToList();
-                _customTurrets = AllBlocks.Where(b => b is IMyTurretControlBlock).Cast<IMyTurretControlBlock>().ToList();
-
-                if (_turrets.Count > 0)
+                _turrets.Clear();
+                foreach (var block in AllBlocks)
                 {
-                    _turrets[0].GetTargetingGroups(_targetingGroups);
-                }
-                else if (_customTurrets.Count > 0)
-                {
-                    _customTurrets[0].GetTargetingGroups(_targetingGroups);
-                }
+                    if (block is IMyLargeTurretBase)
+                    {
+                        _turrets.Add(new BasicTurret(block as IMyLargeTurretBase));
+                    }
 
-                _targetingGroupDisplayNames = _targetingGroups.Select(s => s.ToUpper()).ToList();
+                    if (block is IMyTurretControlBlock)
+                    {
+                        _turrets.Add(new CustomTurret(block as IMyTurretControlBlock));
+                    }
+                }
 
                 foreach (var t in _turrets)
                 {
                     t.SetTargetingGroup(_targetingGroups[_targetingGroupIndex]);
                     t.Enabled = _enabled;
-                    t.TargetNeutrals = _targetNeutrals;
-                }
-
-                foreach (var t in _customTurrets)
-                {
-                    t.SetTargetingGroup(_targetingGroups[_targetingGroupIndex]);
-                    t.Enabled = _enabled;
-                    t.TargetNeutrals = _targetNeutrals;
+                    t.TargetNeutral = _targetNeutral;
                 }
             }
 
@@ -87,27 +77,14 @@ namespace IngameScript
                         turretTargets.Add(target);
                     }
                 }
-                foreach (var t in _customTurrets)
-                {
-                    var entity = t.GetTargetedEntity();
-                    if (!entity.IsEmpty())
-                    {
-                        EntityInfoExt target = new EntityInfoExt(entity, globalTime);
-                        turretTargets.Add(target);
-                    }
-                }
             }
 
-            public void ToggleNeutrals()
+            public void ToggleNeutral()
             {
-                _targetNeutrals = !_targetNeutrals;
+                _targetNeutral = !_targetNeutral;
                 foreach (var t in _turrets)
                 {
-                    t.TargetNeutrals = _targetNeutrals;
-                }
-                foreach (var t in _customTurrets)
-                {
-                    t.TargetNeutrals = _targetNeutrals;
+                    t.TargetNeutral = _targetNeutral;
                 }
             }
 
@@ -115,10 +92,6 @@ namespace IngameScript
             {
                 _targetingGroupIndex = (_targetingGroupIndex + 1) % _targetingGroups.Count;
                 foreach (var t in _turrets)
-                {
-                    t.SetTargetingGroup(_targetingGroups[_targetingGroupIndex]);
-                }
-                foreach (var t in _customTurrets)
                 {
                     t.SetTargetingGroup(_targetingGroups[_targetingGroupIndex]);
                 }
@@ -131,9 +104,13 @@ namespace IngameScript
                 {
                     t.Enabled = _enabled;
                 }
-                foreach (var t in _customTurrets)
+            }
+
+            public void Focus()
+            {
+                foreach (var t in _turrets)
                 {
-                    t.Enabled = _enabled;
+                    t.Focus();
                 }
             }
 
@@ -143,7 +120,7 @@ namespace IngameScript
                 sb.AppendLine("----------");
                 sb.Append(" STATUS: ").AppendLine(_enabled ? "ENABLED" : "DISABLED");
                 sb.Append("  FOCUS: ").AppendLine(_targetingGroupDisplayNames[_targetingGroupIndex]);
-                sb.Append("  NTRLS: ").Append(_targetNeutrals ? "YES" : "NO");
+                sb.Append("  NTRLS: ").Append(_targetNeutral ? "YES" : "NO");
             }
         }
     }

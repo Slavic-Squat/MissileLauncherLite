@@ -100,9 +100,10 @@ namespace IngameScript
                 CommandHandlerInst.RegisterCommand("STOP_PRINTING", (args) => MissileCoordinator.StopPrinting(args));
                 CommandHandlerInst.RegisterCommand("START_PRINTING_ALL", (args) => MissileCoordinator.StartPrintingAll());
                 CommandHandlerInst.RegisterCommand("STOP_PRINTING_ALL", (args) => MissileCoordinator.StopPrintingAll());
-                CommandHandlerInst.RegisterCommand("TOGGLE_NEUTRALS", (args) => TargetCoordinator.TurretCoordinator.ToggleNeutrals());
+                CommandHandlerInst.RegisterCommand("TOGGLE_NEUTRAL", (args) => TargetCoordinator.TurretCoordinator.ToggleNeutral());
                 CommandHandlerInst.RegisterCommand("CYCLE_TARGETING_GROUP", (args) => TargetCoordinator.TurretCoordinator.CycleTargetingGroup());
                 CommandHandlerInst.RegisterCommand("TOGGLE_TURRETS", (args) => TargetCoordinator.TurretCoordinator.ToggleEnabled());
+                CommandHandlerInst.RegisterCommand("FOCUS_TURRETS", (args) => TargetCoordinator.TurretCoordinator.Focus());
             }
 
             public void Run(double time)
