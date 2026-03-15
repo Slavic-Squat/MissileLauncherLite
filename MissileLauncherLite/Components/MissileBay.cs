@@ -298,6 +298,21 @@ namespace IngameScript
                 }
             }
 
+            public void TogglePrinting()
+            {
+                if (_printMode == PrintMode.Manual)
+                {
+                    if (Status == BayStatus.Empty)
+                    {
+                        StartPrinting();
+                    }
+                    else if (Status == BayStatus.Projecting)
+                    {
+                        StopPrinting();
+                    }
+                }
+            }
+
             public void AppendOverview(StringBuilder sb)
             {
                 sb.Append("[BAY ").Append(ID).AppendLine("]");

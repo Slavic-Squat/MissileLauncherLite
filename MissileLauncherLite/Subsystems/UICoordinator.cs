@@ -96,6 +96,11 @@ namespace IngameScript
             {
                 _hud.StopSearch();
             }
+
+            public void ToggleHUDSearch()
+            {
+                _hud.ToggleSearch();
+            }
         }
     }
 }

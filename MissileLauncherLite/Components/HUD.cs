@@ -200,6 +200,18 @@ namespace IngameScript
                 _searchingCoroutine.Dispose();
                 _searchingCoroutine = null;
             }
+
+            public void ToggleSearch()
+            {
+                if (_searchingCoroutine == null)
+                {
+                    StartSearch();
+                }
+                else
+                {
+                    StopSearch();
+                }
+            }
         }
     }
 }

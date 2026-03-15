@@ -365,6 +365,16 @@ namespace IngameScript
                     bay.StopPrinting();
                 }
             }
+
+            public void TogglePrinting(params string[] bayIDs)
+            {
+                foreach (string bayID in bayIDs)
+                {
+                    MissileBay bay;
+                    if (!_missileBays.TryGetValue(bayID, out bay)) return;
+                    bay.TogglePrinting();
+                }
+            }
         }
     }
 }

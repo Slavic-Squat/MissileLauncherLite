@@ -96,6 +96,8 @@ namespace IngameScript
                 CommandHandlerInst.RegisterCommand("CYCLE_DISPLAY_MODE", (args) => UICoordinator.CycleDisplayMode());
                 CommandHandlerInst.RegisterCommand("START_HUD_SEARCH", (args) => UICoordinator.StartHUDSearch());
                 CommandHandlerInst.RegisterCommand("STOP_HUD_SEARCH", (args) => UICoordinator.StopHUDSearch());
+                CommandHandlerInst.RegisterCommand("TOGGLE_HUD_SEARCH", (args) => UICoordinator.ToggleHUDSearch());
+                CommandHandlerInst.RegisterCommand("TOGGLE_PRINTING", (args) => MissileCoordinator.TogglePrinting(args));
                 CommandHandlerInst.RegisterCommand("START_PRINTING", (args) => MissileCoordinator.StartPrinting(args));
                 CommandHandlerInst.RegisterCommand("STOP_PRINTING", (args) => MissileCoordinator.StopPrinting(args));
                 CommandHandlerInst.RegisterCommand("START_PRINTING_ALL", (args) => MissileCoordinator.StartPrintingAll());
