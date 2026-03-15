@@ -77,7 +77,7 @@ namespace IngameScript
 
             public void Focus()
             {
-                TurretBlock.ApplyAction("Focus Locked Target");
+                TurretBlock.ApplyAction("FocusLockedTarget");
             }
         }
 
@@ -127,7 +127,7 @@ namespace IngameScript
 
             public void Focus()
             {
-                TurretControlBlock.ApplyAction("Focus Locked Target");
+                TurretControlBlock.ApplyAction("FocusLockedTarget");
             }
         }
     }
