@@ -29,10 +29,11 @@ namespace IngameScript
             private IReadOnlyDictionary<long, EntityInfoExt> _targets = new Dictionary<long, EntityInfoExt>();
 
             private bool _targetNeutral = false;
+            private bool _targetHostile = true;
             private bool _enabled = true;
 
-            private List<string> _targetingGroups = new List<string>() { "Default", "Weapons", "PowerSystems", "Propulsion"};
-            private List<string> _targetingGroupDisplayNames = new List<string>() { "DEFAULT", "WEAPONS", "POWER", "PROPULSION"};
+            private List<string> _targetingGroups = new List<string>() { "Weapons", "PowerSystems", "Propulsion"};
+            private List<string> _targetingGroupDisplayNames = new List<string>() { "WEAPONS", "POWER", "PROPULSION"};
             private int _targetingGroupIndex = 0;
             public TurretCoordinator(IReadOnlyDictionary<long, EntityInfoExt> targets)
             {
@@ -61,6 +62,7 @@ namespace IngameScript
                     t.SetTargetingGroup(_targetingGroups[_targetingGroupIndex]);
                     t.Enabled = _enabled;
                     t.TargetNeutral = _targetNeutral;
+                    t.TargetHostile = _targetHostile;
                 }
             }
 
@@ -85,6 +87,15 @@ namespace IngameScript
                 foreach (var t in _turrets)
                 {
                     t.TargetNeutral = _targetNeutral;
+                }
+            }
+
+            public void ToggleHostile()
+            {
+                _targetHostile = !_targetHostile;
+                foreach (var t in _turrets)
+                {
+                    t.TargetHostile = _targetHostile;
                 }
             }
 
@@ -120,6 +131,7 @@ namespace IngameScript
                 sb.AppendLine("----------");
                 sb.Append(" STATUS: ").AppendLine(_enabled ? "ENABLED" : "DISABLED");
                 sb.Append("  FOCUS: ").AppendLine(_targetingGroupDisplayNames[_targetingGroupIndex]);
+                sb.Append("  HSTLS: ").AppendLine(_targetHostile ? "YES" : "NO");
                 sb.Append("  NTRLS: ").Append(_targetNeutral ? "YES" : "NO");
             }
         }

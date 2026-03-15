@@ -25,6 +25,7 @@ namespace IngameScript
         public interface ITurret
         {
             bool TargetNeutral { get; set; }
+            bool TargetHostile { get; set; }
             bool Enabled { get; set; }
             bool LockedTargetingGroup { get; }
             void SetTargetingGroup(string groupName);
@@ -39,6 +40,12 @@ namespace IngameScript
             {
                 get { return TurretBlock.TargetNeutrals; }
                 set { TurretBlock.TargetNeutrals = value; }
+            }
+
+            public bool TargetHostile
+            {
+                get { return TurretBlock.TargetEnemies; }
+                set { TurretBlock.TargetEnemies = value; }
             }
 
             public bool Enabled
@@ -89,6 +96,12 @@ namespace IngameScript
             {
                 get { return TurretControlBlock.TargetNeutrals; }
                 set { TurretControlBlock.TargetNeutrals = value; }
+            }
+
+            public bool TargetHostile
+            {
+                get { return TurretControlBlock.GetValueBool("TargetEnemies"); }
+                set { TurretControlBlock.SetValueBool("TargetEnemies", value); }
             }
 
             public bool Enabled
