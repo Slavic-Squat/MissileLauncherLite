@@ -63,12 +63,41 @@ namespace IngameScript
                     }
                 }
 
+                string groupName = _targetingGroups[_targetingGroupIndex];
                 foreach (var t in _turrets)
                 {
-                    t.SetTargetingGroup(_targetingGroups[_targetingGroupIndex]);
+                    t.SetTargetingGroup(groupName);
                     t.Enabled = _enabled;
                     t.TargetNeutral = _targetNeutral;
                     t.TargetHostile = _targetHostile;
+                }
+
+                if (_defensiveAI != null)
+                {
+                    if (_targetNeutral)
+                    {
+                        _defensiveAI.ApplyAction("SetAttackMode_EnemiesAndNeutrals");
+                    }
+                    else
+                    {
+                        _defensiveAI.ApplyAction("SetAttackMode_EnemiesOnly");
+                    }
+
+                    switch (groupName)
+                    {
+                        case "Weapons":
+                            _defensiveAI.ApplyAction("SetTargetingGroup_Weapons");
+                            break;
+                        case "PowerSystems":
+                            _defensiveAI.ApplyAction("SetTargetingGroup_PowerSystems");
+                            break;
+                        case "Propulsion":
+                            _defensiveAI.ApplyAction("SetTargetingGroup_Propulsion");
+                            break;
+                        default:
+                            _defensiveAI.ApplyAction("SetTargetingGroup_Weapons");
+                            break;
+                    }
                 }
             }
 
