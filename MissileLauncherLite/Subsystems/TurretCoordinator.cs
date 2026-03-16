@@ -25,6 +25,7 @@ namespace IngameScript
         public class TurretCoordinator
         {
             private List<ITurret> _turrets = new List<ITurret>();
+            private IMyDefensiveCombatBlock _defensiveAI;
 
             private IReadOnlyDictionary<long, EntityInfoExt> _targets = new Dictionary<long, EntityInfoExt>();
 
@@ -54,6 +55,11 @@ namespace IngameScript
                     if (block is IMyTurretControlBlock)
                     {
                         _turrets.Add(new CustomTurret(block as IMyTurretControlBlock));
+                    }
+
+                    if (block is IMyDefensiveCombatBlock)
+                    {
+                        _defensiveAI = block as IMyDefensiveCombatBlock;
                     }
                 }
 
@@ -88,6 +94,17 @@ namespace IngameScript
                 {
                     t.TargetNeutral = _targetNeutral;
                 }
+                if (_defensiveAI != null)
+                {
+                    if (_targetNeutral)
+                    {
+                        _defensiveAI.ApplyAction("SetAttackMode_EnemiesAndNeutrals");
+                    }
+                    else
+                    {
+                        _defensiveAI.ApplyAction("SetAttackMode_EnemiesOnly");
+                    }
+                }
             }
 
             public void ToggleHostile()
@@ -102,9 +119,29 @@ namespace IngameScript
             public void CycleTargetingGroup()
             {
                 _targetingGroupIndex = (_targetingGroupIndex + 1) % _targetingGroups.Count;
+                string groupName = _targetingGroups[_targetingGroupIndex];
                 foreach (var t in _turrets)
                 {
-                    t.SetTargetingGroup(_targetingGroups[_targetingGroupIndex]);
+                    t.SetTargetingGroup(groupName);
+                }
+
+                if (_defensiveAI != null)
+                {
+                    switch (groupName)
+                    {
+                        case "Weapons":
+                            _defensiveAI.ApplyAction("SetTargetingGroup_Weapons");
+                            break;
+                        case "PowerSystems":
+                            _defensiveAI.ApplyAction("SetTargetingGroup_PowerSystems");
+                            break;
+                        case "Propulsion":
+                            _defensiveAI.ApplyAction("SetTargetingGroup_Propulsion");
+                            break;
+                        default:
+                            _defensiveAI.ApplyAction("SetTargetingGroup_Weapons");
+                            break;
+                    }
                 }
             }
 
