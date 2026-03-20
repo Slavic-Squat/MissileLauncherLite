@@ -152,6 +152,7 @@ namespace IngameScript
                     Alignment = TextAlignment.CENTER
                 };
 
+                _uiCoordinator.TargetCoordinator.UnlockTarget();
                 while (true)
                 {
                     var entitySprites = _targetingHUDSpriteBuilder.EntitySprites;
