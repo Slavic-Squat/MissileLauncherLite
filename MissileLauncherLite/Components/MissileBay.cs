@@ -121,7 +121,7 @@ namespace IngameScript
 
             private void ReceiveHandshake(string missileAddressStr, string payloadStr)
             {
-                if (_attachment.Status == MyShipConnectorStatus.Unconnected)
+                if (_attachment.Status == MyShipConnectorStatus.Unconnected || !_mergeBlock.IsConnected)
                 {
                     return;
                 }
@@ -144,7 +144,7 @@ namespace IngameScript
             private void RequestUpdate()
             {
                 _lastUpdateTime = SystemTime;
-                if (_missileComputer == null || _attachment.Status == MyShipConnectorStatus.Unconnected)
+                if (_missileComputer == null || _attachment.Status == MyShipConnectorStatus.Unconnected || !_mergeBlock.IsConnected)
                 {
                     return;
                 }
@@ -155,7 +155,7 @@ namespace IngameScript
 
             public void ReceiveUpdate(string stageStr)
             {
-                if (_attachment.Status == MyShipConnectorStatus.Unconnected)
+                if (_attachment.Status == MyShipConnectorStatus.Unconnected || !_mergeBlock.IsConnected)
                 {
                     return;
                 }
@@ -186,7 +186,7 @@ namespace IngameScript
                     return;
                 }
 
-                if (Status > BayStatus.Projecting && _attachment.Status == MyShipConnectorStatus.Unconnected)
+                if (Status > BayStatus.Projecting && (_attachment.Status == MyShipConnectorStatus.Unconnected || !_mergeBlock.IsConnected))
                 {
                     ForgetMissile();
                 }
@@ -203,13 +203,13 @@ namespace IngameScript
                             _projector.Enabled = true;
                             Status = BayStatus.Projecting;
                         }
-                        else if (_attachment.Status != MyShipConnectorStatus.Unconnected)
+                        else if (_printMode == PrintMode.Disabled && _attachment.Status != MyShipConnectorStatus.Unconnected && _mergeBlock.IsConnected)
                         {
                             Status = BayStatus.Handshake;
                         }
                         break;
                     case BayStatus.Projecting:
-                        if (_projector.RemainingBlocks <= 0 && _attachment.Status != MyShipConnectorStatus.Unconnected)
+                        if (_projector.RemainingBlocks <= 0 && _attachment.Status != MyShipConnectorStatus.Unconnected && _mergeBlock.IsConnected)
                         {
                             _projector.Enabled = false;
                             Status = BayStatus.Handshake;
@@ -224,7 +224,7 @@ namespace IngameScript
                     case BayStatus.Building:
                         break;
                     case BayStatus.Fueling:
-                        if (_attachment.Status == MyShipConnectorStatus.Connectable)
+                        if (_attachment.Status == MyShipConnectorStatus.Connectable && _mergeBlock.IsConnected)
                         {
                             _attachment.Connect();
                         }
