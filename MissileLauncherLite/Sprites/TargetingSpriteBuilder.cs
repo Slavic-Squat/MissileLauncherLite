@@ -50,11 +50,13 @@ namespace IngameScript
             private RectangleF _screenBounds;
             private float _resScale = 1f;
             private float _scale = 1f;
+            private float _maxDim;
             private IMyTextSurface _surface;
 
-            public TargetingSpriteBuilder(IMyTextSurface surface, RectangleF screenBounds, float scale)
+            public TargetingSpriteBuilder(IMyTextSurface surface, RectangleF screenBounds, float scale = 1f)
             {
-                _resScale = Math.Max(screenBounds.Width, screenBounds.Height) / 1024f;
+                _maxDim = Math.Max(screenBounds.Width, screenBounds.Height);
+                _resScale = _maxDim / 1024f;
                 _scale = scale;
                 _surface = surface;
                 _screenBounds = screenBounds;
@@ -85,7 +87,7 @@ namespace IngameScript
                 Vector3D selfPosView = Vector3D.Transform(selfPosWorld, viewMatrix);
                 Vector4D selfPosClip = Vector4D.Transform(new Vector4D(selfPosView, 1), _projectionMatrix);
                 Vector3 selfPosNDC = new Vector3(selfPosClip.X / selfPosClip.W, selfPosClip.Y / selfPosClip.W, selfPosClip.Z / selfPosClip.W);
-                Vector2 selfPosPixel = new Vector2((1 + selfPosNDC.X * _scale) * _screenBounds.Width / 2f, (1 - selfPosNDC.Y * _scale) * _screenBounds.Height / 2f);
+                Vector2 selfPosPixel = new Vector2((1 + selfPosNDC.X * _scale) * _maxDim / 2f, (1 - selfPosNDC.Y * _scale) * _maxDim / 2f);
 
                 MySprite tempSprite = new MySprite()
                 {
@@ -104,7 +106,7 @@ namespace IngameScript
                 Vector3D basePosView = Vector3D.Transform(basePosWorld, viewMatrix);
                 Vector4D basePosClip = Vector4D.Transform(new Vector4D(basePosView, 1), _projectionMatrix);
                 Vector3 basePosNDC = new Vector3(basePosClip.X / basePosClip.W, basePosClip.Y / basePosClip.W, basePosClip.Z / basePosClip.W);
-                Vector2 basePosPixel = new Vector2((1 + basePosNDC.X * _scale) * _screenBounds.Width / 2f, (1 - basePosNDC.Y * _scale) * _screenBounds.Height / 2f);
+                Vector2 basePosPixel = new Vector2((1 + basePosNDC.X * _scale) * _maxDim / 2f, (1 - basePosNDC.Y * _scale) * _maxDim / 2f);
                 float baseDepthScale = (float)(targetToCameraDist / -basePosView.Z);
 
                 tempSprite = new MySprite()
@@ -124,7 +126,7 @@ namespace IngameScript
                 Vector3D stemPosView = Vector3D.Transform(stemPosWorld, viewMatrix);
                 Vector4D stemPosClip = Vector4D.Transform(new Vector4D(stemPosView, 1), _projectionMatrix);
                 Vector3 stemPosNDC = new Vector3(stemPosClip.X / stemPosClip.W, stemPosClip.Y / stemPosClip.W, stemPosClip.Z / stemPosClip.W);
-                Vector2 stemPosPixel = new Vector2((1 + stemPosNDC.X * _scale) * _screenBounds.Width / 2f, (1 - stemPosNDC.Y * _scale) * _screenBounds.Height / 2f);
+                Vector2 stemPosPixel = new Vector2((1 + stemPosNDC.X * _scale) * _maxDim / 2f, (1 - stemPosNDC.Y * _scale) * _maxDim / 2f);
 
                 Vector2 stemVector = new Vector2(selfPosPixel.X - basePosPixel.X, selfPosPixel.Y - basePosPixel.Y);
                 float stemLength = stemVector.Length();
@@ -152,7 +154,7 @@ namespace IngameScript
                     Type = SpriteType.TEXTURE,
                     Data = "Radial_Grid_0",
                     Position = _screenBounds.Center,
-                    Size = _screenBounds.Size * _scale,
+                    Size = new Vector2(_maxDim, _maxDim) * _scale,
                     Color = Color.Gray,
                     Alignment = TextAlignment.CENTER,
                     RotationOrScale = 0f
@@ -165,7 +167,7 @@ namespace IngameScript
                     Type = SpriteType.TEXTURE,
                     Data = "Radial_Grad_0",
                     Position = _screenBounds.Center,
-                    Size = _screenBounds.Size * _scale,
+                    Size = new Vector2(_maxDim, _maxDim) * _scale,
                     Color = new Color(64, 64, 64, 255),
                     Alignment = TextAlignment.CENTER,
                     RotationOrScale = 0f
@@ -178,7 +180,7 @@ namespace IngameScript
                     Type = SpriteType.TEXTURE,
                     Data = "StarryBackground",
                     Position = _screenBounds.Center,
-                    Size = _screenBounds.Size * _scale,
+                    Size = new Vector2(_maxDim, _maxDim),
                     Color = Color.LightGray,
                     Alignment = TextAlignment.CENTER,
                     RotationOrScale = 0f
@@ -191,7 +193,7 @@ namespace IngameScript
                     Type = SpriteType.TEXTURE,
                     Data = "SquareSimple",
                     Position = _screenBounds.Center,
-                    Size = _screenBounds.Size * _scale,
+                    Size = new Vector2(_maxDim, _maxDim),
                     Color = Color.Black,
                     Alignment = TextAlignment.CENTER,
                     RotationOrScale = 0f
@@ -262,7 +264,7 @@ namespace IngameScript
                     Vector3D entityPosView = Vector3D.Transform(entityPosWorld, viewMatrix);
                     Vector4D entityPosClip = Vector4D.Transform(new Vector4D(entityPosView, 1), _projectionMatrix);
                     Vector3 entityPosNDC = new Vector3(entityPosClip.X / entityPosClip.W, entityPosClip.Y / entityPosClip.W, entityPosClip.Z / entityPosClip.W);
-                    Vector2 entityPosPixel = new Vector2((1 + entityPosNDC.X * _scale) * _screenBounds.Width / 2f, (1 - entityPosNDC.Y * _scale) * _screenBounds.Height / 2f);
+                    Vector2 entityPosPixel = new Vector2((1 + entityPosNDC.X * _scale) * _maxDim / 2f, (1 - entityPosNDC.Y * _scale) * _maxDim / 2f);
                     float entityDepthScale = (float)(targetToCameraDist / -entityPosView.Z);
 
                     string spriteName = default(string);
@@ -337,7 +339,7 @@ namespace IngameScript
                     Vector3D basePosView = Vector3D.Transform(basePosWorld, viewMatrix);
                     Vector4D basePosClip = Vector4D.Transform(new Vector4D(basePosView, 1), _projectionMatrix);
                     Vector3 basePosNDC = new Vector3(basePosClip.X / basePosClip.W, basePosClip.Y / basePosClip.W, basePosClip.Z / basePosClip.W);
-                    Vector2 basePosPixel = new Vector2((1 + basePosNDC.X * _scale) * _screenBounds.Width / 2f, (1 - basePosNDC.Y * _scale) * _screenBounds.Height / 2f);
+                    Vector2 basePosPixel = new Vector2((1 + basePosNDC.X * _scale) * _maxDim / 2f, (1 - basePosNDC.Y * _scale) * _maxDim / 2f);
                     float baseDepthScale = (float)(targetToCameraDist / -basePosView.Z);
 
                     tempSprite = new MySprite()
@@ -357,7 +359,7 @@ namespace IngameScript
                     Vector3D stemPosView = Vector3D.Transform(stemPosWorld, viewMatrix);
                     Vector4D stemPosClip = Vector4D.Transform(new Vector4D(stemPosView, 1), _projectionMatrix);
                     Vector3 stemPosNDC = new Vector3(stemPosClip.X / stemPosClip.W, stemPosClip.Y / stemPosClip.W, stemPosClip.Z / stemPosClip.W);
-                    Vector2 stemPosPixel = new Vector2((1 + stemPosNDC.X * _scale) * _screenBounds.Width / 2f, (1 - stemPosNDC.Y * _scale) * _screenBounds.Height / 2f);
+                    Vector2 stemPosPixel = new Vector2((1 + stemPosNDC.X * _scale) * _maxDim / 2f, (1 - stemPosNDC.Y * _scale) * _maxDim / 2f);
 
                     Vector2 stemVector = new Vector2(entityPosPixel.X - basePosPixel.X, entityPosPixel.Y - basePosPixel.Y);
                     float stemLength = stemVector.Length();

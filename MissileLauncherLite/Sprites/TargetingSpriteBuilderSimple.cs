@@ -31,6 +31,8 @@ namespace IngameScript
             private string _rangeStr = "6 km";
             private RectangleF _screenBounds;
             private float _resScale = 1f;
+            private float _scale = 1f;
+            private float _maxDim;
 
             private StringBuilder _sb = new StringBuilder();
             private IMyTextSurface _surface;
@@ -40,11 +42,13 @@ namespace IngameScript
             private List<MySpriteExt> _finalSprites = new List<MySpriteExt>();
             private Dictionary<long, MyEntitySprite> _entitySprites = new Dictionary<long, MyEntitySprite>();
 
-            public TargetingSpriteBuilderSimple(IMyTextSurface surface, RectangleF screenBounds)
+            public TargetingSpriteBuilderSimple(IMyTextSurface surface, RectangleF screenBounds, float scale = 1f)
             {
                 _surface = surface;
-                _resScale = Math.Max(screenBounds.Width, screenBounds.Height) / 1024f;
+                _maxDim = Math.Max(screenBounds.Width, screenBounds.Height);
+                _resScale = _maxDim / 1024f;
                 _screenBounds = screenBounds;
+                _scale = scale;
                 BuildStaticSprites();
             }
 
@@ -55,7 +59,7 @@ namespace IngameScript
                     Type = SpriteType.TEXTURE,
                     Data = "Self_1",
                     Position = _screenBounds.Center,
-                    Size = new Vector2(128, 128) * _resScale,
+                    Size = new Vector2(128, 128) * _resScale * _scale,
                     Color = Color.White,
                     Alignment = TextAlignment.CENTER,
                     RotationOrScale = 0f
@@ -68,7 +72,7 @@ namespace IngameScript
                     Type = SpriteType.TEXTURE,
                     Data = "Radial_Grid_1",
                     Position = _screenBounds.Center,
-                    Size = _screenBounds.Size,
+                    Size = new Vector2(_maxDim, _maxDim) * _scale,
                     Color = Color.Gray,
                     Alignment = TextAlignment.CENTER,
                     RotationOrScale = 0f
@@ -81,7 +85,7 @@ namespace IngameScript
                     Type = SpriteType.TEXTURE,
                     Data = "Radial_Grad_1",
                     Position = _screenBounds.Center,
-                    Size = _screenBounds.Size,
+                    Size = new Vector2(_maxDim, _maxDim) * _scale,
                     Color = new Color(64, 64, 64, 255),
                     Alignment = TextAlignment.CENTER,
                     RotationOrScale = 0f
@@ -94,7 +98,7 @@ namespace IngameScript
                     Type = SpriteType.TEXTURE,
                     Data = "StarryBackground",
                     Position = _screenBounds.Center,
-                    Size = _screenBounds.Size,
+                    Size = new Vector2(_maxDim, _maxDim),
                     Color = Color.LightGray,
                     Alignment = TextAlignment.CENTER,
                     RotationOrScale = 0f
@@ -107,7 +111,7 @@ namespace IngameScript
                     Type = SpriteType.TEXTURE,
                     Data = "SquareSimple",
                     Position = _screenBounds.Center,
-                    Size = _screenBounds.Size,
+                    Size = new Vector2(_maxDim, _maxDim),
                     Color = Color.Black,
                     Alignment = TextAlignment.CENTER,
                     RotationOrScale = 0f
@@ -147,7 +151,7 @@ namespace IngameScript
                 MySprite rangeTextSprite = SpriteHelper.CreateText(rangeTextPos, _sb.Clear().Append(_rangeStr), Color.White, _surface, text: _rangeStr, fontID: "Monospace", scale: 1.5f * _resScale);
                 _sprites.Add(new MySpriteExt(rangeTextSprite, 0.01f));
 
-                float pixelsPerMeter = _screenBounds.Width / (2f * _range);
+                float pixelsPerMeter = _maxDim * _scale / (2f * _range);
 
                 foreach (var entity in entities.Values)
                 {
@@ -201,7 +205,7 @@ namespace IngameScript
                         Type = SpriteType.TEXTURE,
                         Data = spriteName,
                         Position = entityPosPixel,
-                        Size = spriteSize,
+                        Size = spriteSize * _scale,
                         Color = spriteColor,
                         Alignment = TextAlignment.CENTER,
                         RotationOrScale = 0f,
@@ -221,7 +225,7 @@ namespace IngameScript
                             Type = SpriteType.TEXTURE,
                             Data = "Selector_0",
                             Position = entityPosPixel,
-                            Size = MySpriteExtEntity.Sprite.Size * 1.5f,
+                            Size = MySpriteExtEntity.Sprite.Size * 1.5f * _scale,
                             Color = Color.OrangeRed,
                             Alignment = TextAlignment.CENTER,
                             RotationOrScale = 0f,

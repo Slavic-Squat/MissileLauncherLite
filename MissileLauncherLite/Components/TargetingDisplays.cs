@@ -25,10 +25,8 @@ namespace IngameScript
         public class TargetingDisplays
         {
             private UICoordinator _uiCoordinator;
-            private TargetingSpriteBuilderSimple _spriteBuilderSimple;
-            private TargetingSpriteBuilder _spriteBuilderAdvanced;
-            private List<IMyTextSurface> _simpleDisplays = new List<IMyTextSurface>();
-            private List<IMyTextSurface> _advancedDisplays = new List<IMyTextSurface>();
+            private Dictionary<IMyTextSurface, TargetingSpriteBuilder> _advancedDisplays = new Dictionary<IMyTextSurface, TargetingSpriteBuilder>();
+            private Dictionary<IMyTextSurface, TargetingSpriteBuilderSimple> _simpleDisplays = new Dictionary<IMyTextSurface, TargetingSpriteBuilderSimple>();
             private IReadOnlyDictionary<long, EntityInfoExt> _entities = new Dictionary<long, EntityInfoExt>();
             public TargetingDisplays(UICoordinator uiCoordinator)
             {
@@ -51,21 +49,11 @@ namespace IngameScript
                     }
                     bool isAdvanced = config.Get("Config", "Advanced").ToBoolean(false);
                     config.Set("Config", "Advanced", isAdvanced);
+                    float scale = config.Get("Config", "Scale").ToSingle(1f);
+                    config.Set("Config", "Scale", scale);
                     displayBlock.CustomData = config.ToString();
 
                     AddDisplay(displayBlock as IMyTextSurface, isAdvanced);
-                }
-
-                RectangleF screenBounds = new RectangleF(0, 0, 1024, 1024);
-
-                if (_simpleDisplays.Count != 0)
-                {
-                    _spriteBuilderSimple = new TargetingSpriteBuilderSimple(_simpleDisplays[0], screenBounds);
-                }
-
-                if (_advancedDisplays.Count != 0)
-                {
-                    _spriteBuilderAdvanced = new TargetingSpriteBuilder(_advancedDisplays[0], screenBounds, 1.5f);
                 }
             }
 
@@ -73,23 +61,26 @@ namespace IngameScript
             {
                 long lockedTargetID = _uiCoordinator.TargetCoordinator.LockedTargetID;
 
-                _spriteBuilderSimple?.BuildSprites(_entities, lockedTargetID);
-                _spriteBuilderAdvanced?.BuildSprites(_entities, lockedTargetID);
-
-                foreach (var display in _simpleDisplays)
+                foreach (var kvp in _simpleDisplays)
                 {
+                    var display = kvp.Key;
+                    var spriteBuilder = kvp.Value;
+                    spriteBuilder.BuildSprites(_entities, lockedTargetID);
                     var frame = display.DrawFrame();
-                    foreach (var sprite in _spriteBuilderSimple.FinalSprites)
+                    foreach (var sprite in spriteBuilder.FinalSprites)
                     {
                         sprite.Draw(frame);
                     }
                     frame.Dispose();
                 }
 
-                foreach (var display in _advancedDisplays)
+                foreach (var kvp in _advancedDisplays)
                 {
+                    var display = kvp.Key;
+                    var spriteBuilder = kvp.Value;
+                    spriteBuilder.BuildSprites(_entities, lockedTargetID);
                     var frame = display.DrawFrame();
-                    foreach (var sprite in _spriteBuilderAdvanced.FinalSprites)
+                    foreach (var sprite in spriteBuilder.FinalSprites)
                     {
                         sprite.Draw(frame);
                     }
@@ -97,17 +88,23 @@ namespace IngameScript
                 }
             }
 
-            public void AddDisplay(IMyTextSurface display, bool isAdvanced)
+            public void AddDisplay(IMyTextSurface display, bool isAdvanced, float scale = 1f)
             {
                 if (isAdvanced)
                 {
-                    if (_advancedDisplays.Contains(display)) return;
-                    _advancedDisplays.Add(display);
+                    if (_advancedDisplays.ContainsKey(display)) return;
+                    Vector2 screenSize = display.SurfaceSize;
+                    Vector2 screenPos = (display.TextureSize - screenSize) / 2;
+                    RectangleF screenBounds = new RectangleF(screenPos, screenSize);
+                    _advancedDisplays.Add(display, new TargetingSpriteBuilder(display, screenBounds, scale));
                 }
                 else
                 {
-                    if (_simpleDisplays.Contains(display)) return;
-                    _simpleDisplays.Add(display);
+                    if (_simpleDisplays.ContainsKey(display)) return;
+                    Vector2 screenSize = display.SurfaceSize;
+                    Vector2 screenPos = (display.TextureSize - screenSize) / 2;
+                    RectangleF screenBounds = new RectangleF(screenPos, screenSize);
+                    _simpleDisplays.Add(display, new TargetingSpriteBuilderSimple(display, screenBounds, scale));
                 }
 
                 display.ContentType = ContentType.SCRIPT;

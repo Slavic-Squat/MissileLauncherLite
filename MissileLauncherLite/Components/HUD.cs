@@ -55,11 +55,10 @@ namespace IngameScript
                 _hudDisplay.Script = "";
                 _hudDisplay.ScriptBackgroundColor = Color.Black;
 
-                Vector2 surfaceSize = _hudDisplay.SurfaceSize;
-                Vector2 textureSize = _hudDisplay.TextureSize;
-                float res = Math.Min(surfaceSize.X, surfaceSize.Y);
-                _resScale = res / 1024f;
-                _screenBounds = new RectangleF(0, 0, surfaceSize.X, surfaceSize.Y);
+                Vector2 screenSize = _hudDisplay.SurfaceSize;
+                Vector2 screenPos = (_hudDisplay.TextureSize - screenSize) / 2f;
+                _screenBounds = new RectangleF(screenPos, screenSize);
+                _resScale = Math.Max(_screenBounds.Width, _screenBounds.Height) / 1024f;
 
                 IMyTerminalBlock cameraReference = SystemCoordinator.ReferenceController;
 
