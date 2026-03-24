@@ -53,7 +53,7 @@ namespace IngameScript
                     config.Set("Config", "Scale", scale);
                     displayBlock.CustomData = config.ToString();
 
-                    AddDisplay(displayBlock as IMyTextSurface, isAdvanced);
+                    AddDisplay(displayBlock as IMyTextSurface, isAdvanced, scale);
                 }
             }
 
