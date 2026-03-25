@@ -80,8 +80,6 @@ namespace IngameScript
                 FlightControl = new FlightControl();
                 UICoordinator = new UICoordinator(this);
 
-                CommunicationHandlerInst.RegisterTag("COMMANDS", true);
-
                 CommandHandlerInst.RegisterCommand("UNLOCK_TARGET", (args) => TargetCoordinator.UnlockTarget());
                 CommandHandlerInst.RegisterCommand("CYCLE_FLIGHT_CTRL", (args) => FlightControl.CycleFlightControlMode());
                 CommandHandlerInst.RegisterCommand("TOGGLE_BAYS", (args) => MissileCoordinator.ToggleBays(args));
@@ -119,8 +117,6 @@ namespace IngameScript
 
                 GlobalTime = time;
 
-                Receive();
-
                 _userInput.Run(time);
                 FlightControl.Control(_userInput);
                 TargetCoordinator.Run(time);
@@ -128,19 +124,6 @@ namespace IngameScript
                 UICoordinator.Run();
 
                 _lastRunTime = time;
-            }
-
-            private void Receive()
-            {
-                while (CommunicationHandlerInst.HasMessage("COMMANDS", true))
-                {
-                    MyIGCMessage msg;
-                    if (CommunicationHandlerInst.TryRetrieveMessage("COMMANDS", true, out msg))
-                    {
-                        string command = msg.As<string>();
-                        CommandHandlerInst.RunCommands(command);
-                    }
-                }
             }
         }
     }

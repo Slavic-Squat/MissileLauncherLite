@@ -34,7 +34,7 @@ namespace IngameScript
 
         private static List<IMyTerminalBlock> _allBlocks = new List<IMyTerminalBlock>();
         private const string _programName = "MissileLauncherLite";
-        private const string _programVersion = "1.33";
+        private const string _programVersion = "1.34";
 
         private SystemCoordinator _systemCoordinator;
         private bool _isInitialized = false;
@@ -51,7 +51,7 @@ namespace IngameScript
             IGCS = IGC;
             RuntimeInfo = Runtime;
             MePb = Me;
-            Runtime.UpdateFrequency = UpdateFrequency.Once;
+            Runtime.UpdateFrequency = UpdateFrequency.None;
 
             Config = new MyIni();
             if (!Config.TryParse(MePb.CustomData))
@@ -97,7 +97,6 @@ namespace IngameScript
             
             if (_isInitialized && (updateSource & (UpdateType.Update1 | UpdateType.Update10 | UpdateType.Update100)) != 0)
             {
-                CommunicationHandlerInst.Receive();
                 _systemCoordinator.Run(SystemTime);
             }
 
@@ -107,7 +106,6 @@ namespace IngameScript
 
         private void Init()
         {
-            Runtime.UpdateFrequency = UpdateFrequency.None;
             _isInitialized = false;
             _lastExceptionMsg = string.Empty;
             _allBlocks.Clear();
@@ -128,9 +126,15 @@ namespace IngameScript
             long secureBroadcastPIN = Config.Get("Config", "SecureBroadcastPIN").ToInt64(123456);
             Config.Set("Config", "SecureBroadcastPIN", secureBroadcastPIN);
 
+            Runtime.UpdateFrequency = GetUpdateFrequency(Config.Get("Config", "UpdateFrequency").ToString("NONE"));
+            Config.Set("Config", "UpdateFrequency", GetUpdateFrequencyStr(Runtime.UpdateFrequency));
+
             Me.CustomData = Config.ToString();
 
             CommunicationHandlerInst = new CommunicationHandler(secureBroadcastPIN);
+            CommunicationHandlerInst.SetUnicastMessageCallback("MESSAGE_RECEIVED");
+            CommandHandlerInst.RegisterCommand("MESSAGE_RECEIVED", (args) => Receive());
+            CommunicationHandlerInst.RegisterTag("COMMANDS", true);
 
             GridTerminalSystem.GetBlocksOfType(_allBlocks, b => b.IsSameConstructAs(Me) && b.CustomName.ToUpper().Contains(blockTag.ToUpper()));
 
@@ -146,13 +150,62 @@ namespace IngameScript
                 _lastExceptionMsg = ex.Message;
                 _debugScreen.WriteText(_lastExceptionMsg, true);
                 CommandHandlerInst.RegisterCommand("INIT", (args) => Init());
+                Runtime.UpdateFrequency = UpdateFrequency.None;
 
                 return;
             }
 
-            Me.CustomData = Config.ToString();
             _isInitialized = true;
-            Runtime.UpdateFrequency = UpdateFrequency.Update1;
+        }
+
+        private void Receive()
+        {
+            if (!_isInitialized) return;
+
+            CommunicationHandlerInst.Receive();
+            while (CommunicationHandlerInst.HasMessage("COMMANDS", true))
+            {
+                MyIGCMessage msg;
+                if (CommunicationHandlerInst.TryRetrieveMessage("COMMANDS", true, out msg))
+                {
+                    string command = msg.As<string>();
+                    CommandHandlerInst.RunCommands(command);
+                }
+            }
+        }
+
+        private UpdateFrequency GetUpdateFrequency(string frequencyStr)
+        {
+            switch (frequencyStr.ToUpper())
+            {
+                case "NONE":
+                    return UpdateFrequency.None;
+                case "UPDATE1":
+                    return UpdateFrequency.Update1;
+                case "UPDATE10":
+                    return UpdateFrequency.Update10;
+                case "UPDATE100":
+                    return UpdateFrequency.Update100;
+                default:
+                    return UpdateFrequency.None;
+            }
+        }
+
+        private string GetUpdateFrequencyStr(UpdateFrequency frequency)
+        {
+            switch (frequency)
+            {
+                case UpdateFrequency.None:
+                    return "NONE";
+                case UpdateFrequency.Update1:
+                    return "UPDATE1";
+                case UpdateFrequency.Update10:
+                    return "UPDATE10";
+                case UpdateFrequency.Update100:
+                    return "UPDATE100";
+                default:
+                    return "NONE";
+            }
         }
     }
 }
