@@ -147,7 +147,7 @@ namespace IngameScript
 
                 AdjustRange((float)farthestDistance);
 
-                Vector2 rangeTextPos = _screenBounds.Position + new Vector2(30f, 10f) * _resScale;
+                Vector2 rangeTextPos = _screenBounds.Position + new Vector2(40f, 10f) * _resScale;
                 MySprite rangeTextSprite = SpriteHelper.CreateText(rangeTextPos, _sb.Clear().Append(_rangeStr), Color.White, _surface, text: _rangeStr, fontID: "Monospace", scale: 1.5f * _resScale);
                 _sprites.Add(new MySpriteExt(rangeTextSprite, 0.01f));
 
