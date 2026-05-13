@@ -29,12 +29,45 @@ namespace IngameScript
             private PriorityQueue<IMyCameraBlock, double> _cameraQueue;
             private MovingAverage _avgRaycastDistance = new MovingAverage(100);
             private double _timeLastRaycast;
+            private bool _enabled = true;
+            private bool _raycastEnabled = true;
             public string ID { get; private set; }
             public float MaxRaycastDistance { get; set; }
             public bool Recharging => SystemTime - _timeLastRaycast < Period;
             public int CameraCount => _cameras.Count;
             public double Period => _avgRaycastDistance.Average / (_cameras[0].RaycastTimeMultiplier * 1000 * CameraCount);
             public double Frequency => 1 / Period;
+            public bool Enabled
+            {
+                get
+                {
+                    return _enabled;
+                }
+                set
+                {
+                    foreach (var camera in _cameras)
+                    {
+                        camera.Enabled = value;
+                    }
+                    _enabled = value;
+                }
+            }
+            public bool RaycastEnabled
+            {
+                get
+                {
+                    return _raycastEnabled;
+                }
+                set
+                {
+                    foreach (var camera in _cameras)
+                    {
+                        camera.EnableRaycast = value;
+                    }
+                    _raycastEnabled = value;
+                }
+            }
+            public bool IsFunctional => _cameras.All(c => c.IsFunctional);
             public CameraArray(string id, float maxRaycastDistance)
             {
                 ID = id.ToUpper();
@@ -53,6 +86,7 @@ namespace IngameScript
 
                 foreach (var camera in _cameras)
                 {
+                    camera.Enabled = true;
                     camera.EnableRaycast = true;
                 }
 
@@ -118,6 +152,15 @@ namespace IngameScript
                     _cameras.Add(camera);
                     camera.EnableRaycast = true;
                     _cameraQueue.Enqueue(camera);
+                }
+            }
+
+            public void RemoveCamera(IMyCameraBlock camera)
+            {
+                if (_cameras.Contains(camera))
+                {
+                    _cameras.Remove(camera);
+                    _cameraQueue = new PriorityQueue<IMyCameraBlock, double>(c => -c.AvailableScanRange, _cameras);
                 }
             }
         }
