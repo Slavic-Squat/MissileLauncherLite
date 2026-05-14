@@ -26,9 +26,19 @@ namespace IngameScript
         {
             public static void AppendTime(StringBuilder sb, double totalSeconds)
             {
-                if (double.IsPositiveInfinity(totalSeconds))
+                if (double.IsPositiveInfinity(totalSeconds) || totalSeconds == double.MaxValue)
                 {
                     sb.Append("∞");
+                    return;
+                }
+                else if (double.IsNegativeInfinity(totalSeconds) || totalSeconds == double.MinValue)
+                {
+                    sb.Append("-∞");
+                    return;
+                }
+                else if (double.IsNaN(totalSeconds))
+                {
+                    sb.Append("NaN");
                     return;
                 }
 
