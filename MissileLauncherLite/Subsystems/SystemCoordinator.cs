@@ -77,6 +77,7 @@ namespace IngameScript
                 _userInput = new UserInput(ReferenceController);
                 TargetCoordinator = new TargetCoordinator();
                 MissileCoordinator = new MissileCoordinator(TargetCoordinator.Targets);
+                MissileCoordinator.MissileTargetUpdated += TargetCoordinator.AddTarget;
                 FlightControl = new FlightControl();
                 UICoordinator = new UICoordinator(this);
 

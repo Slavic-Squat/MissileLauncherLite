@@ -32,7 +32,7 @@ namespace IngameScript
             {
                 Sprite = sprite;
                 Depth = depth;
-                Pos = sprite.Position.Value;
+                Pos = sprite.Position ?? Vector2.Zero;
                 IsValid = true;
             }
 

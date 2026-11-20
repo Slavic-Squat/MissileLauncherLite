@@ -69,14 +69,7 @@ namespace IngameScript
                     return this;
                 }
                 MergeKinematics(other);
-
-                if (Type == EntityType.Target && other.Type == EntityType.Missile)
-                {
-                    if (other.MissileInfo.IsValid)
-                    {
-                        MissileInfo = other.MissileInfo;
-                    }
-                }
+                MissileInfo = MissileInfo.Merge(other.MissileInfo);
                 return this;
             }
 

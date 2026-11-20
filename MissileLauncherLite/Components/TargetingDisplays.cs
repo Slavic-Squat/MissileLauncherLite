@@ -51,9 +51,17 @@ namespace IngameScript
                     config.Set("Config", "Advanced", isAdvanced);
                     float scale = config.Get("Config", "Scale").ToSingle(1f);
                     config.Set("Config", "Scale", scale);
+                    float sizeX = config.Get("Config", "SizeX").ToSingle(-1f);
+                    config.Set("Config", "SizeX", sizeX);
+                    float sizeY = config.Get("Config", "SizeY").ToSingle(-1f);
+                    config.Set("Config", "SizeY", sizeY);
+                    float posX = config.Get("Config", "PosX").ToSingle(-1f);
+                    config.Set("Config", "PosX", posX);
+                    float posY = config.Get("Config", "PosY").ToSingle(-1f);
+                    config.Set("Config", "PosY", posY);
                     displayBlock.CustomData = config.ToString();
 
-                    AddDisplay(displayBlock as IMyTextSurface, isAdvanced, scale);
+                    AddDisplay(displayBlock as IMyTextSurface, isAdvanced, scale, sizeX, sizeY, posX, posY);
                 }
             }
 
@@ -88,23 +96,31 @@ namespace IngameScript
                 }
             }
 
-            public void AddDisplay(IMyTextSurface display, bool isAdvanced, float scale = 1f)
+            public void AddDisplay(IMyTextSurface display, bool isAdvanced, float scale = 1f, float sizeX = -1, float sizeY = -1, float posX = 0, float posY = 0)
             {
                 if (isAdvanced)
                 {
                     if (_advancedDisplays.ContainsKey(display)) return;
-                    Vector2 screenSize = display.SurfaceSize;
-                    Vector2 screenPos = (display.TextureSize - screenSize) / 2;
-                    RectangleF screenBounds = new RectangleF(screenPos, screenSize);
-                    _advancedDisplays.Add(display, new TargetingSpriteBuilder(display, screenBounds, scale));
+                    Vector2 screenSize = display.TextureSize;
+                    if (sizeX > 0 && sizeY > 0)
+                    {
+                        screenSize = new Vector2(sizeX, sizeY);
+                    }
+                    Vector2 pos = new Vector2(posX, posY);
+                    RectangleF bounds = new RectangleF(pos, screenSize);
+                    _advancedDisplays.Add(display, new TargetingSpriteBuilder(display, bounds, scale));
                 }
                 else
                 {
                     if (_simpleDisplays.ContainsKey(display)) return;
-                    Vector2 screenSize = display.SurfaceSize;
-                    Vector2 screenPos = (display.TextureSize - screenSize) / 2;
-                    RectangleF screenBounds = new RectangleF(screenPos, screenSize);
-                    _simpleDisplays.Add(display, new TargetingSpriteBuilderSimple(display, screenBounds, scale));
+                    Vector2 screenSize = display.TextureSize;
+                    if (sizeX > 0 && sizeY > 0)
+                    {
+                        screenSize = new Vector2(sizeX, sizeY);
+                    }
+                    Vector2 pos = new Vector2(posX, posY);
+                    RectangleF bounds = new RectangleF(pos, screenSize);
+                    _simpleDisplays.Add(display, new TargetingSpriteBuilderSimple(display, bounds, scale));
                 }
 
                 display.ContentType = ContentType.SCRIPT;

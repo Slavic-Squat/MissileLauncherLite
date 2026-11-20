@@ -45,6 +45,7 @@ namespace IngameScript
             public int NumReadyBays => _missileBays.Count(bay => bay.Value.Status == BayStatus.Ready);
             public bool IsLaunching => _launchCoroutine != null;
             public int NumMissiles => _addressTargetIDMap.Count;
+            public event Action<EntityInfoExt> MissileTargetUpdated;
 
             public MissileCoordinator(IReadOnlyDictionary<long, EntityInfoExt> targets)
             {
@@ -68,6 +69,7 @@ namespace IngameScript
                 }
 
                 CommunicationHandlerInst.RegisterTag("MY_MISSILES", true);
+                CommunicationHandlerInst.RegisterTag("MY_MISSILE_TARGET", true);
             }
 
             public void Run(double time)
@@ -134,7 +136,7 @@ namespace IngameScript
 
                 long key = missile.EntityID;
                 EntityRelation relation = EntityRelation.Me;
-                EntityInfoExt entityInfoExt = new EntityInfoExt(missile, relation);
+                EntityInfoExt entityInfoExt = new EntityInfoExt(missile, relation, false);
                 if (!_myMissiles.ContainsKey(key))
                 {
                     _myMissiles.Add(key, entityInfoExt);
@@ -309,14 +311,14 @@ namespace IngameScript
             {
                 while (CommunicationHandlerInst.HasMessage("MY_MISSILES", true))
                 {
-                    MyIGCMessage message;
-                    if (CommunicationHandlerInst.TryRetrieveMessage("MY_MISSILES", true, out message))
+                    MyIGCMessage message0;
+                    if (CommunicationHandlerInst.TryRetrieveMessage("MY_MISSILES", true, out message0))
                     {
-                        if (!_addressTargetIDMap.ContainsKey(message.Source))
+                        if (!_addressTargetIDMap.ContainsKey(message0.Source))
                         {
                             continue;
                         }
-                        ImmutableArray<byte> bytes = message.As<ImmutableArray<byte>>();
+                        ImmutableArray<byte> bytes = message0.As<ImmutableArray<byte>>();
                         int index = 0;
                         byte size = bytes[index++];
                         int bytesRead;
@@ -326,6 +328,30 @@ namespace IngameScript
                             continue;
                         }
                         AddMissile(missile);
+                    }
+
+                    while (CommunicationHandlerInst.HasMessage("MY_MISSILE_TARGET", true))
+                    {
+                        MyIGCMessage message1;
+                        if (CommunicationHandlerInst.TryRetrieveMessage("MY_MISSILE_TARGET", true, out message1))
+                        {
+                            long missileAddress = message1.Source;
+                            if (!_addressTargetIDMap.ContainsKey(missileAddress))
+                            {
+                                continue;
+                            }
+                            ImmutableArray<byte> bytes = message1.As<ImmutableArray<byte>>();
+                            int index = 0;
+                            byte size = bytes[index++];
+                            int bytesRead;
+                            EntityInfo target = EntityInfo.Deserialize(bytes, index, out bytesRead);
+                            if (!target.IsValid || size != bytesRead)
+                            {
+                                continue;
+                            }
+                            EntityInfoExt targetExt = new EntityInfoExt(target, EntityRelation.Hostile, false);
+                            MissileTargetUpdated?.Invoke(targetExt);
+                        }
                     }
                 }
             }

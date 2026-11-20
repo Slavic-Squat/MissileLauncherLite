@@ -32,12 +32,14 @@ namespace IngameScript
             public double TimeRecorded => Info.TimeRecorded;
             public EntityType Type => Info.Type;
             public EntityRelation Relation { get; private set; }
+            public bool SourceIsLocal { get; private set; }
             public bool IsValid { get; private set; }
 
-            public EntityInfoExt(EntityInfo info, EntityRelation relation)
+            public EntityInfoExt(EntityInfo info, EntityRelation relation, bool sourceIsLocal)
             {
                 Info = info;
                 Relation = relation;
+                SourceIsLocal = sourceIsLocal;
                 IsValid = true;
             }
 
@@ -65,6 +67,7 @@ namespace IngameScript
                         Relation = EntityRelation.Neutral;
                         break;
                 }
+                SourceIsLocal = true;
                 IsValid = true;
             }
 
@@ -75,7 +78,15 @@ namespace IngameScript
                     return this;
                 }
                 Info = Info.Merge(other.Info);
-                Relation = other.Relation;
+                if (!SourceIsLocal && other.SourceIsLocal)
+                {
+                    Relation = other.Relation;
+                    SourceIsLocal = true;
+                }
+                else if (SourceIsLocal == other.SourceIsLocal && Info.TimeRecorded < other.Info.TimeRecorded)
+                {
+                    Relation = other.Relation;
+                }
                 return this;
             }
 
@@ -91,6 +102,7 @@ namespace IngameScript
                 sb.AppendLine("--------------");
                 sb.Append("  TYPE: ").AppendLine(EntityEnumHelper.GetEntityTypeStr(Type));
                 sb.Append("  REL: ").AppendLine(EntityEnumHelper.GetEntityRelationStr(Relation));
+                sb.Append("  SRC: ").AppendLine(SourceIsLocal ? "LOCAL" : "REMOTE");
                 double distance = Vector3D.Distance(SystemCoordinator.ReferencePosition, Position);
                 sb.Append("  RNG: ");
                 UIUtilities.AppendDistance(sb, distance);

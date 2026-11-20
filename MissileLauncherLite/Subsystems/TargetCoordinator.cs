@@ -122,7 +122,7 @@ namespace IngameScript
                 _lastRunTime = time;
             }
 
-            private void AddTarget(EntityInfoExt target)
+            public void AddTarget(EntityInfoExt target)
             {
                 if (!target.IsValid)
                 {
