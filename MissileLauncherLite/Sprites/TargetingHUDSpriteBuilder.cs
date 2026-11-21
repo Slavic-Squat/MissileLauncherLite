@@ -141,6 +141,10 @@ namespace IngameScript
                         spriteSize = new Vector2(32, 32) * _resScale;
                     }
 
+                    double entityAge = SystemCoordinator.GlobalTime - entity.TimeRecorded;
+                    float entityAgeFactor = MiscUtilities.Clamp(1 - (float)entityAge / 5f, 0, 1);
+                    spriteColor.A = (byte)MiscUtilities.Lerp(0f, 255f, entityAgeFactor);
+
                     MySprite tempSprite = new MySprite()
                     {
                         Type = SpriteType.TEXTURE,

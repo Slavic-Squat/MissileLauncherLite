@@ -186,7 +186,7 @@ namespace IngameScript
                     RotationOrScale = 0f
                 };
 
-                MySpriteExt bgSpriteExt = new MySpriteExt(tempSprite, 0.998f);
+                MySpriteExt bgSpriteExt = new MySpriteExt(tempSprite, 0.999998f);
 
                 tempSprite = new MySprite()
                 {
@@ -199,7 +199,7 @@ namespace IngameScript
                     RotationOrScale = 0f
                 };
 
-                MySpriteExt bgFillSpriteExt = new MySpriteExt(tempSprite, 0.999f);
+                MySpriteExt bgFillSpriteExt = new MySpriteExt(tempSprite, 0.999999f);
 
                 MySprite clip = new MySprite()
                 {
