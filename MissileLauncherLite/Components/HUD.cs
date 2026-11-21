@@ -197,7 +197,7 @@ namespace IngameScript
 
             public void StopSearch()
             {
-                _searchingCoroutine.Dispose();
+                _searchingCoroutine?.Dispose();
                 _searchingCoroutine = null;
             }
 

@@ -103,7 +103,7 @@ namespace IngameScript
                 if (_hasAzimuthCtrl)
                 {
                     _azimuthRotor = new Rotor($"LASER {ID} AZIMUTH ROTOR");
-                    _azimuthPID = new PIDControl(25, 2, 0.1f);
+                    _azimuthPID = new PIDControl(25, 2, 0);
                 }
                 else
                 {
@@ -113,7 +113,7 @@ namespace IngameScript
                 if (_hasElevationCtrl)
                 {
                     _elevationRotor = new Rotor($"LASER {ID} ELEVATION ROTOR");
-                    _elevationPID = new PIDControl(25, 2, 0.1f);
+                    _elevationPID = new PIDControl(25, 2, 0);
                 }
                 else
                 {
